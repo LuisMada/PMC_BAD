@@ -78,14 +78,21 @@ class UserRegistrationForm(forms.ModelForm):
         fields = ["employee_id", "name", "email", "role"]
 
     def save(self, commit=True):
-        # Create user with default temporary password
-        user = CustomUser.objects.create_user(
-            employee_id=self.cleaned_data["employee_id"],
-            name=self.cleaned_data["name"],
-            role=self.cleaned_data["role"],
-            password="00000000"
-        )
-        user.email = self.cleaned_data["email"]
+        if self.instance.pk:  # If we're editing an existing instance
+            user = self.instance
+            user.employee_id = self.cleaned_data["employee_id"]
+            user.name = self.cleaned_data["name"]
+            user.email = self.cleaned_data["email"]
+            user.role = self.cleaned_data["role"]
+        else:  # Creating a new user
+            user = CustomUser.objects.create_user(
+                employee_id=self.cleaned_data["employee_id"],
+                name=self.cleaned_data["name"],
+                role=self.cleaned_data["role"],
+                password="00000000"
+            )
+            user.email = self.cleaned_data["email"]
+            
         if commit:
             user.save()
         return user

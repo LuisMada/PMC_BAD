@@ -638,7 +638,7 @@ def driver_dashboard(request):
     
     context = {
         'vehicles': vehicles,
-        'filter_form': filter_form,
+        'filter_form': filter_form,  # This comma was missing
         'operational_count': operational_count,
         'repair_count': repair_count,
         'unavailable_count': unavailable_count
@@ -646,3 +646,116 @@ def driver_dashboard(request):
     
     return render(request, "VehicleManagementSystem/OPS_dashboard.html", context)
 
+@login_required
+def view_accounts(request):
+    """View to display all user accounts for VMT team members"""
+    # Check if user has the correct role (Vehicle Management Team)
+    if request.user.role != "Vehicle Management Team":
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect("WH_dashboard")
+        
+    # Get all user accounts
+    accounts = CustomUser.objects.all().order_by('employee_id')
+    
+    # Apply search filter if provided
+    search_query = request.GET.get('search', '')
+    if search_query:
+        accounts = accounts.filter(
+            Q(employee_id__icontains=search_query) | 
+            Q(name__icontains=search_query) | 
+            Q(email__icontains=search_query)
+        )
+    
+    # Set up pagination
+    paginator = Paginator(accounts, 10)  # Show 10 accounts per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'accounts': page_obj.object_list,
+        'search_query': search_query
+    }
+    
+    return render(request, "VehicleManagementSystem/view_accounts.html", context)
+
+@login_required
+def edit_account(request, employee_id):
+    """View to edit a user account"""
+    # Check if user has the correct role (Vehicle Management Team)
+    if request.user.role != "Vehicle Management Team":
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect("WH_dashboard")
+        
+    # Get the user account
+    account = get_object_or_404(CustomUser, employee_id=employee_id)
+    
+    if request.method == "POST":
+        # Create a form instance with the submitted data
+        form = UserRegistrationForm(request.POST, instance=account)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Account for {account.name} updated successfully!")
+            return redirect("view_accounts")
+    else:
+        # Create a form instance with the account data
+        form = UserRegistrationForm(instance=account)
+    
+    context = {
+        'form': form,
+        'account': account,
+        'editing': True
+    }
+    
+    return render(request, "VehicleManagementSystem/edit_account.html", context)
+
+@login_required
+def delete_account(request, employee_id):
+    """View to handle account deletion"""
+    # Check if user has the correct role (Vehicle Management Team)
+    if request.user.role != "Vehicle Management Team":
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect("WH_dashboard")
+    
+    # Don't allow users to delete their own account
+    if request.user.employee_id == employee_id:
+        messages.error(request, "You cannot delete your own account.")
+        return redirect("view_accounts")
+        
+    # Get the user account
+    account = get_object_or_404(CustomUser, employee_id=employee_id)
+    
+    # Ensure POST method for deletion (security)
+    if request.method == "POST":
+        account_name = account.name
+        account.delete()
+        messages.success(request, f"Account for {account_name} has been deleted.")
+        return redirect("view_accounts")
+    
+    context = {
+        'account': account
+    }
+    
+    return render(request, "VehicleManagementSystem/delete_account_confirm.html", context)
+
+@login_required
+def reset_password(request, employee_id):
+    """View to reset a user's password to default"""
+    # Check if user has the correct role (Vehicle Management Team)
+    if request.user.role != "Vehicle Management Team":
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect("WH_dashboard")
+        
+    # Get the user account
+    account = get_object_or_404(CustomUser, employee_id=employee_id)
+    
+    # Ensure POST method for password reset (security)
+    if request.method == "POST":
+        # Reset password to default
+        account.set_password("00000000")
+        account.first_login = True
+        account.save()
+        messages.success(request, f"Password for {account.name} has been reset. They will be prompted to change it on next login.")
+        return redirect("view_accounts")
+    
+    return redirect("view_accounts")

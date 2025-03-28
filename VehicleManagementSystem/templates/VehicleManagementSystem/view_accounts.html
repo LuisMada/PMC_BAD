@@ -1,0 +1,231 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}User Accounts | {% endblock %}
+
+{% block extra_styles %}
+<style>
+    .table-container {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .account-header {
+        background-color: #334481;
+        color: white;
+    }
+    .account-row {
+        transition: background-color 0.2s;
+    }
+    .account-row:hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #334481;
+        border-color: #334481;
+    }
+    .pagination .page-link {
+        color: #334481;
+    }
+    .edit-account-btn {
+        color: #334481;
+        margin: 0 5px;
+    }
+    .delete-account-btn {
+        color: #dc3545;
+        margin: 0 5px;
+    }
+    .reset-password-btn {
+        color: #ffc107;
+        margin: 0 5px;
+    }
+    .role-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .role-vmt {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .role-warehouse {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .role-operations {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+    }
+    .search-container {
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">User Accounts</h2>
+        <a href="{% url 'register' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>New Account
+        </a>
+    </div>
+
+    <div class="search-container">
+        <form method="get" class="row g-3">
+            <div class="col-md-9">
+                <input type="text" name="search" class="form-control" placeholder="Search by Employee ID, Name, or Email" value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-2"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-container">
+        <table class="table table-hover mb-0">
+            <thead class="account-header">
+                <tr>
+                    <th scope="col">Employee ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Role</th>
+                    <th scope="col" class="text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in accounts %}
+                <tr class="account-row">
+                    <td>{{ account.employee_id }}</td>
+                    <td>{{ account.name }}</td>
+                    <td>{{ account.email }}</td>
+                    <td>
+                        <span class="role-badge 
+                            {% if account.role == 'Vehicle Management Team' %}role-vmt
+                            {% elif account.role == 'Warehouse Personnel' %}role-warehouse
+                            {% else %}role-operations{% endif %}">
+                            {{ account.role }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <div class="action-buttons">
+                            <a href="{% url 'edit_account' account.employee_id %}" class="edit-account-btn" title="Edit Account">
+                                <i class="bi bi-pencil-square fs-5"></i>
+                            </a>
+                            
+                            {% if account.employee_id != request.user.employee_id %}
+                                <a href="#" class="reset-password-btn" data-bs-toggle="modal" data-bs-target="#resetPasswordModal{{ account.employee_id }}" title="Reset Password">
+                                    <i class="bi bi-key fs-5"></i>
+                                </a>
+                                <a href="#" class="delete-account-btn" data-bs-toggle="modal" data-bs-target="#deleteAccountModal{{ account.employee_id }}" title="Delete Account">
+                                    <i class="bi bi-trash fs-5"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Reset Password Confirmation Modal -->
+                        <div class="modal fade" id="resetPasswordModal{{ account.employee_id }}" tabindex="-1" aria-labelledby="resetPasswordModalLabel{{ account.employee_id }}" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="resetPasswordModalLabel{{ account.employee_id }}">Confirm Password Reset</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                <p>Are you sure you want to reset the password for {{ account.name }} ({{ account.employee_id }})?</p>
+                                <p class="text-warning"><i class="bi bi-exclamation-triangle me-2"></i>This will reset their password to the default (00000000) and they will be prompted to change it on next login.</p>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{% url 'reset_password' account.employee_id %}" method="post">
+                                  {% csrf_token %}
+                                  <button type="submit" class="btn btn-warning">Reset Password</button>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Delete Confirmation Modal -->
+                        <div class="modal fade" id="deleteAccountModal{{ account.employee_id }}" tabindex="-1" aria-labelledby="deleteAccountModalLabel{{ account.employee_id }}" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="deleteAccountModalLabel{{ account.employee_id }}">Confirm Delete</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                <p>Are you sure you want to delete the account for {{ account.name }} ({{ account.employee_id }})?</p>
+                                <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>This action cannot be undone.</p>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{% url 'delete_account' account.employee_id %}" method="post">
+                                  {% csrf_token %}
+                                  <button type="submit" class="btn btn-danger">Delete</button>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4">No user accounts found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="User accounts pagination">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

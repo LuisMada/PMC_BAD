@@ -1,0 +1,123 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Edit Account | {% endblock %}
+
+{% block extra_styles %}
+<style>
+    .card {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .card-header {
+        background-color: #334481;
+        color: white;
+        padding: 15px 20px;
+    }
+    .form-container {
+        padding: 20px;
+    }
+    .btn-primary {
+        background-color: #334481;
+        border-color: #334481;
+    }
+    .btn-primary:hover {
+        background-color: #283874;
+        border-color: #283874;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="mb-4">
+        <a href="{% url 'view_accounts' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Accounts
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Edit Account: {{ account.name }}</h3>
+        </div>
+        
+        <div class="form-container">
+            <form method="POST">
+                {% csrf_token %}
+
+                <!-- Display general non-field errors -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Employee ID Field -->
+                <div class="mb-3">
+                    <label for="employee_id" class="form-label">Employee ID</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                        <input type="text" name="employee_id" id="employee_id" class="form-control {% if form.employee_id.errors %}is-invalid{% endif %}" placeholder="Enter Employee ID" value="{{ form.employee_id.value|default:'' }}" required>
+                    </div>
+                    {% for error in form.employee_id.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Name Field -->
+                <div class="mb-3">
+                    <label for="name" class="form-label">Full Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" name="name" id="name" class="form-control {% if form.name.errors %}is-invalid{% endif %}" placeholder="Enter Full Name" value="{{ form.name.value|default:'' }}" required>
+                    </div>
+                    {% for error in form.name.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Email Field -->
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                        <input type="email" name="email" id="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" placeholder="john@example.com" value="{{ form.email.value|default:'' }}" required>
+                    </div>
+                    {% for error in form.email.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Role Field -->
+                <div class="mb-3">
+                    <label for="role" class="form-label">Role</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
+                        <select name="role" id="role" class="form-select {% if form.role.errors %}is-invalid{% endif %}" required>
+                            <option value="" disabled {% if not form.role.value %}selected{% endif %}>Select a role</option>
+                            <option value="Operations Team" {% if form.role.value == "Operations Team" %}selected{% endif %}>Operations Team</option>
+                            <option value="Warehouse Personnel" {% if form.role.value == "Warehouse Personnel" %}selected{% endif %}>Warehouse Personnel</option>
+                            <option value="Vehicle Management Team" {% if form.role.value == "Vehicle Management Team" %}selected{% endif %}>Vehicle Management Team</option>
+                        </select>
+                    </div>
+                    {% for error in form.role.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Save Changes
+                    </button>
+                    <a href="{% url 'view_accounts' %}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

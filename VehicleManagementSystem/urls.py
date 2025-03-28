@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     login_view, logout_view, register_view, dashboard, driver_dashboard, management_dashboard, 
     create_report, manage_vehicles, add_vehicle, edit_vehicle, delete_vehicle, add_vehicle_damage,
-    change_password, generate_report_pdf, view_reports, delete_report  # Add view_reports here
+    change_password, generate_report_pdf, view_reports, delete_report, 
+    view_accounts, edit_account, delete_account, reset_password  # Add new view functions
 )
 
 urlpatterns = [
@@ -29,4 +30,10 @@ urlpatterns = [
     path("vehicles/delete/<str:plate_number>/", delete_vehicle, name="delete_vehicle"),
     path("vehicles/<str:plate_number>/add-damage/", add_vehicle_damage, name="add_vehicle_damage"),
     path("reports/", view_reports, name="view_reports"),
+    
+    # Account management URLs
+    path("accounts/", view_accounts, name="view_accounts"),
+    path("accounts/edit/<str:employee_id>/", edit_account, name="edit_account"),
+    path("accounts/delete/<str:employee_id>/", delete_account, name="delete_account"),
+    path("accounts/reset-password/<str:employee_id>/", reset_password, name="reset_password"),
 ]
