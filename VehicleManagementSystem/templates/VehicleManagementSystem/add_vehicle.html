@@ -1,0 +1,273 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Add Vehicle{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .form-container {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+    }
+    .image-preview {
+        width: 100%;
+        height: 300px;
+        background-color: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+    .status-options {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+    }
+    .status-option {
+        flex: 1;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .status-option:hover {
+        border-color: #adb5bd;
+    }
+    .status-option.selected {
+        border-color: #1f357d;
+        background-color: rgba(31, 53, 125, 0.1);
+    }
+    .status-radio {
+        display: none;
+    }
+    .status-operational {
+        color: #198754;
+    }
+    .status-repair {
+        color: #ffc107;
+    }
+    .status-unavailable {
+        color: #dc3545;
+    }
+    .image-upload-btn {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+    }
+    .image-upload-btn input[type=file] {
+        position: absolute;
+        top: 0;
+        right: 0;
+        min-width: 100%;
+        min-height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'manage_vehicles' %}" class="btn btn-outline-secondary me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="fw-bold m-0">Add New Vehicle</h2>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="form-container">
+                <form method="post" enctype="multipart/form-data" id="vehicleForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Image upload area -->
+                            <div class="image-preview" id="imagePreview">
+                                <i class="bi bi-car-front-fill text-secondary" style="font-size: 4rem;"></i>
+                            </div>
+                            <div class="d-grid">
+                                <div class="image-upload-btn btn btn-outline-secondary">
+                                    <i class="bi bi-upload"></i> Upload Vehicle Image
+                                    {{ form.photo }}
+                                </div>
+                            </div>
+                            {% if form.photo.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.photo.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <!-- Vehicle details -->
+                            <div class="mb-3">
+                                <label for="{{ form.plate_number.id_for_label }}" class="form-label">Plate Number <span class="text-danger">*</span></label>
+                                {{ form.plate_number }}
+                                {% if form.plate_number.errors %}
+                                    <div class="text-danger mt-1">
+                                        {{ form.plate_number.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.vehicle_make.id_for_label }}" class="form-label">Make <span class="text-danger">*</span></label>
+                                {{ form.vehicle_make }}
+                                {% if form.vehicle_make.errors %}
+                                    <div class="text-danger mt-1">
+                                        {{ form.vehicle_make.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.vehicle_model.id_for_label }}" class="form-label">Model <span class="text-danger">*</span></label>
+                                {{ form.vehicle_model }}
+                                {% if form.vehicle_model.errors %}
+                                    <div class="text-danger mt-1">
+                                        {{ form.vehicle_model.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.year.id_for_label }}" class="form-label">Year</label>
+                                {{ form.year }}
+                                {% if form.year.errors %}
+                                    <div class="text-danger mt-1">
+                                        {{ form.year.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.last_maintenance.id_for_label }}" class="form-label">Last Maintenance Date</label>
+                                {{ form.last_maintenance }}
+                                {% if form.last_maintenance.errors %}
+                                    <div class="text-danger mt-1">
+                                        {{ form.last_maintenance.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status section -->
+                    <div class="mt-4">
+                        <label class="form-label">Status <span class="text-danger">*</span></label>
+                        
+                        <div class="status-options">
+                            <div class="status-option selected" data-status="Operational">
+                                <i class="bi bi-check-circle status-operational" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0">Operational</p>
+                            </div>
+                            
+                            <div class="status-option" data-status="In Repair">
+                                <i class="bi bi-tools status-repair" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0">In Repair</p>
+                            </div>
+                            
+                            <div class="status-option" data-status="Unavailable">
+                                <i class="bi bi-x-circle status-unavailable" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0">Unavailable</p>
+                            </div>
+                        </div>
+                        
+                        <div class="status-radios mt-2">
+                            {{ form.status }}
+                        </div>
+                        
+                        {% if form.status.errors %}
+                            <div class="text-danger mt-1">
+                                {{ form.status.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-blue btn-lg">Add Vehicle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+    // Image preview functionality
+    document.getElementById('{{ form.photo.id_for_label }}').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imagePreview = document.getElementById('imagePreview');
+                imagePreview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 300px;" />`;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Status selection
+    const statusOptions = document.querySelectorAll('.status-option');
+    const statusRadios = document.querySelectorAll('input[name="status"]');
+    
+    // Initialize the selected status based on the checked radio
+    document.addEventListener('DOMContentLoaded', function() {
+        let checkedValue = '';
+        statusRadios.forEach(radio => {
+            if (radio.checked) {
+                checkedValue = radio.value;
+            }
+        });
+        
+        // If no radio is checked, select the first one
+        if (!checkedValue) {
+            statusRadios[0].checked = true;
+            checkedValue = statusRadios[0].value;
+        }
+        
+        // Highlight the corresponding option
+        statusOptions.forEach(option => {
+            if (option.dataset.status === checkedValue) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
+    });
+    
+    // Handle option clicks
+    statusOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const status = this.dataset.status;
+            
+            // Update radios
+            statusRadios.forEach(radio => {
+                if (radio.value === status) {
+                    radio.checked = true;
+                }
+            });
+            
+            // Update visual selection
+            statusOptions.forEach(opt => {
+                if (opt === this) {
+                    opt.classList.add('selected');
+                } else {
+                    opt.classList.remove('selected');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% endblock %}

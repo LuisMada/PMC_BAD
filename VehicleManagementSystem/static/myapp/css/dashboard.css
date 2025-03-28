@@ -1,0 +1,49 @@
+
+.greeting {
+    font-size: 26px;
+    font-weight: 900;
+}
+
+.action-buttons {
+    gap: 50px;
+}
+
+.action-button-container  {
+    width: 150px;
+
+    .action-button {
+        height: 150px;
+        width: 100%;
+        border-radius: 5px;
+
+        i {
+            font-size: 68px !important;
+        }
+    }
+
+    .action-button-text {
+        font-size: 18px;
+        font-weight: 700;
+    }
+}
+
+.vehicle-availability {
+    .header {
+        font-size: 26px;
+        font-weight: 900;
+    }
+
+    .vehicles {
+        background-color: white;
+        padding: 30px;
+
+        .vehicle-card {
+            min-height: 350px;
+            height: 100%;
+
+            .card-header {
+                background-color: #394B85 !important;
+            }
+        }
+    }
+}

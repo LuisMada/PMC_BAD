@@ -1,0 +1,151 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Manage Vehicles{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .vehicle-list {
+        margin-top: 20px;
+    }
+    .vehicle-card {
+        margin-bottom: 15px;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+    .vehicle-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .vehicle-img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+    }
+    .status-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        border-radius: 20px;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .status-operational {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .status-repair {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .status-unavailable {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .filter-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .badge-count {
+        font-size: 14px;
+        margin-left: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold">Manage Vehicles</h2>
+        <a href="{% url 'add_vehicle' %}" class="btn btn-blue">
+            <i class="bi bi-plus-lg"></i> Add New
+        </a>
+    </div>
+
+    <!-- Filter section -->
+    <div class="filter-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Search</label>
+                {{ filter_form.search }}
+            </div>
+            <div class="col-md-4">
+                <label for="status" class="form-label">Status</label>
+                {{ filter_form.status }}
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-blue me-2">
+                    <i class="bi bi-search"></i> Filter
+                </button>
+                <a href="{% url 'manage_vehicles' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Status summary -->
+    <div class="mb-4">
+        <div class="d-flex flex-wrap gap-3">
+            <div class="badge bg-success rounded-pill p-2">
+                Operational <span class="badge bg-light text-dark badge-count">{{ operational_count }}</span>
+            </div>
+            <div class="badge bg-warning text-dark rounded-pill p-2">
+                In Repair <span class="badge bg-light text-dark badge-count">{{ repair_count }}</span>
+            </div>
+            <div class="badge bg-danger rounded-pill p-2">
+                Unavailable <span class="badge bg-light text-dark badge-count">{{ unavailable_count }}</span>
+            </div>
+            <div class="badge bg-primary rounded-pill p-2">
+                Total <span class="badge bg-light text-dark badge-count">{{ vehicles|length }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehicle list -->
+    <div class="vehicle-list">
+        <div class="row">
+            {% for vehicle in vehicles %}
+                <div class="col-md-4">
+                    <div class="card vehicle-card">
+                        {% if vehicle.photo %}
+                            <img src="{{ vehicle.photo.url }}" class="vehicle-img" alt="{{ vehicle.plate_number }}">
+                        {% else %}
+                            <div class="vehicle-img bg-light d-flex align-items-center justify-content-center">
+                                <i class="bi bi-car-front-fill text-secondary" style="font-size: 4rem;"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <span class="status-badge 
+                            {% if vehicle.status == 'Operational' %}status-operational
+                            {% elif vehicle.status == 'In Repair' %}status-repair
+                            {% else %}status-unavailable{% endif %}">
+                            {{ vehicle.status }}
+                        </span>
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ vehicle.vehicle_make }} - {{ vehicle.vehicle_model }} {{ vehicle.year }}</h5>
+                            <h6 class="text-muted">{{ vehicle.plate_number }}</h6>
+                            <div class="d-grid gap-2 mt-3">
+                                <a href="{% url 'edit_vehicle' vehicle.plate_number %}" class="btn btn-blue">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        No vehicles found. <a href="{% url 'add_vehicle' %}">Add a vehicle</a> to get started.
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

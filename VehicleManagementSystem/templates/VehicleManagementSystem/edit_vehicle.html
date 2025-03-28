@@ -1,0 +1,320 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Edit Vehicle - {{ vehicle.plate_number }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .form-container {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .image-preview {
+        width: 100%;
+        height: 300px;
+        background-color: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .status-options {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+    }
+    .status-option {
+        flex: 1;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .status-option:hover {
+        border-color: #adb5bd;
+    }
+    .status-option.selected {
+        border-color: #1f357d;
+        background-color: rgba(31, 53, 125, 0.1);
+    }
+    .status-radio {
+        display: none;
+    }
+    .status-operational {
+        color: #198754;
+    }
+    .status-repair {
+        color: #ffc107;
+    }
+    .status-unavailable {
+        color: #dc3545;
+    }
+    .image-upload-btn {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+    }
+    .image-upload-btn input[type=file] {
+        position: absolute;
+        top: 0;
+        right: 0;
+        min-width: 100%;
+        min-height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    .damage-history {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .damage-item {
+        border-left: 3px solid #dc3545;
+        padding-left: 15px;
+        margin-bottom: 15px;
+    }
+    .tab-panel {
+        padding: 20px;
+        background-color: white;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .nav-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    .nav-tabs .nav-link.active {
+        color: #1f357d;
+        border-bottom: 3px solid #1f357d;
+        background-color: transparent;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'manage_vehicles' %}" class="btn btn-outline-secondary me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="fw-bold m-0">{{ vehicle.vehicle_make }} {{ vehicle.vehicle_model }} ({{ vehicle.plate_number }})</h2>
+    </div>
+
+    <ul class="nav nav-tabs" id="vehicleTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details-tab-pane" type="button" role="tab" aria-controls="details-tab-pane" aria-selected="true">
+                <i class="bi bi-info-circle"></i> Vehicle Details
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="damage-tab" data-bs-toggle="tab" data-bs-target="#damage-tab-pane" type="button" role="tab" aria-controls="damage-tab-pane" aria-selected="false">
+                <i class="bi bi-exclamation-triangle"></i> Damage History
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="vehicleTabsContent">
+        <!-- Vehicle Details Tab -->
+        <div class="tab-panel tab-pane fade show active" id="details-tab-pane" role="tabpanel" aria-labelledby="details-tab" tabindex="0">
+            <form method="post" enctype="multipart/form-data" id="vehicleForm">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- Image upload area -->
+                        <div class="image-preview" id="imagePreview">
+                            {% if vehicle.photo %}
+                                <img src="{{ vehicle.photo.url }}" alt="{{ vehicle.plate_number }}">
+                            {% else %}
+                                <i class="bi bi-car-front-fill text-secondary" style="font-size: 4rem;"></i>
+                            {% endif %}
+                        </div>
+                        <div class="d-grid">
+                            <div class="image-upload-btn btn btn-outline-secondary">
+                                <i class="bi bi-upload"></i> Change Vehicle Image
+                                {{ form.photo }}
+                            </div>
+                        </div>
+                        {% if form.photo.errors %}
+                            <div class="text-danger mt-1">
+                                {{ form.photo.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <!-- Vehicle details -->
+                        <div class="mb-3">
+                            <label for="{{ form.plate_number.id_for_label }}" class="form-label">Plate Number <span class="text-danger">*</span></label>
+                            {{ form.plate_number }}
+                            {% if form.plate_number.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.plate_number.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.vehicle_make.id_for_label }}" class="form-label">Make <span class="text-danger">*</span></label>
+                            {{ form.vehicle_make }}
+                            {% if form.vehicle_make.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.vehicle_make.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.vehicle_model.id_for_label }}" class="form-label">Model <span class="text-danger">*</span></label>
+                            {{ form.vehicle_model }}
+                            {% if form.vehicle_model.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.vehicle_model.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.year.id_for_label }}" class="form-label">Year</label>
+                            {{ form.year }}
+                            {% if form.year.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.year.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status section -->
+                <div class="mt-4">
+                    <label class="form-label">Status <span class="text-danger">*</span></label>
+                    
+                    <div class="status-options">
+                        <div class="status-option {% if vehicle.status == 'Operational' %}selected{% endif %}" data-status="Operational">
+                            <i class="bi bi-check-circle status-operational" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">Operational</p>
+                        </div>
+                        
+                        <div class="status-option {% if vehicle.status == 'In Repair' %}selected{% endif %}" data-status="In Repair">
+                            <i class="bi bi-tools status-repair" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">In Repair</p>
+                        </div>
+                        
+                        <div class="status-option {% if vehicle.status == 'Unavailable' %}selected{% endif %}" data-status="Unavailable">
+                            <i class="bi bi-x-circle status-unavailable" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">Unavailable</p>
+                        </div>
+                    </div>
+                    
+                    <div class="status-radios mt-2">
+                        {{ form.status }}
+                    </div>
+                    
+                    {% if form.status.errors %}
+                        <div class="text-danger mt-1">
+                            {{ form.status.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-blue">Save Changes</button>
+                    <a href="{% url 'delete_vehicle' vehicle.plate_number %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i> Delete Vehicle
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Damage History Tab -->
+        <div class="tab-panel tab-pane fade" id="damage-tab-pane" role="tabpanel" aria-labelledby="damage-tab" tabindex="0">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4 class="mb-3">Report New Damage</h4>
+                    <form method="post" action="{% url 'add_vehicle_damage' vehicle.plate_number %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="{{ damage_form.description.id_for_label }}" class="form-label">Damage Description</label>
+                            {{ damage_form.description }}
+                        </div>
+                        <button type="submit" class="btn btn-blue">Submit Damage Report</button>
+                    </form>
+                </div>
+                
+                <div class="col-md-6">
+                    <h4 class="mb-3">Damage History</h4>
+                    <div class="damage-history">
+                        {% for damage in damages %}
+                            <div class="damage-item">
+                                <p class="text-muted mb-1">{{ damage.date_reported|date:"F j, Y, g:i a" }}</p>
+                                <p class="mb-0">{{ damage.description }}</p>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted">No damage reports found for this vehicle.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+    // Image preview functionality
+    document.getElementById('{{ form.photo.id_for_label }}').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imagePreview = document.getElementById('imagePreview');
+                imagePreview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 300px;" />`;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Status selection
+    const statusOptions = document.querySelectorAll('.status-option');
+    const statusRadios = document.querySelectorAll('input[name="status"]');
+    
+    // Handle option clicks
+    statusOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const status = this.dataset.status;
+            
+            // Update radios
+            statusRadios.forEach(radio => {
+                if (radio.value === status) {
+                    radio.checked = true;
+                }
+            });
+            
+            // Update visual selection
+            statusOptions.forEach(opt => {
+                if (opt === this) {
+                    opt.classList.add('selected');
+                } else {
+                    opt.classList.remove('selected');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% endblock %}

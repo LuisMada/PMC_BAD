@@ -1,0 +1,438 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Vehicle Inspection Report | {% endblock %}
+
+{% block extra_styles %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .form-container {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+        margin: auto;
+    }
+    .btn-blue {
+        background-color: #1f357d;
+        color: white;
+        border-radius: 6px;
+        padding: 10px 20px;
+        font-weight: bold;
+    }
+    .btn-blue:hover {
+        background-color: #162b63;
+    }
+    .btn-save {
+        background-color: #28a745;
+        color: white;
+        border-radius: 6px;
+        padding: 10px 20px;
+        font-weight: bold;
+    }
+    .btn-save:hover {
+        background-color: #218838;
+    }
+    .hidden {
+        display: none;
+    }
+    .table-wrapper {
+        border-radius: 10px;
+        overflow: hidden;
+        border-bottom: 15px solid #394B85;
+    }
+    .inspection-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden; 
+        border-bottom: 15px solid #394B85;
+    }
+    .inspection-table th {
+        background-color: #1f357d;
+        color: white;
+        padding: 10px;
+        text-align: left;
+    }
+    .inspection-table td {
+        padding: 4px;
+        /* border-bottom: 1px solid #ddd; */
+    }
+    .inspection-table .part {
+        font-size: 21px;font-weight: 500;
+    }
+
+    .comment-field {
+        border-color: #394B85;
+        border-radius: 10px;
+    }
+    .page-button {
+        width: 230px; height: 45px;
+    }
+    .edit-mode-badge {
+        background-color: #ffc107;
+        color: #212529;
+        font-weight: bold;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin-left: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="height: 100%">
+    <!-- Trip Form (Step 1) -->
+    <div id="tripForm" class="d-flex flex-column justify-content-around" style="height: 100%;">
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                <h3 class="fw-bold">
+                    1 Basic Information
+                    {% if editing %}
+                    <span class="edit-mode-badge">Editing Report #{{ inspection.report_id }}</span>
+                    {% endif %}
+                </h3>
+                <div class="form-container mt-4">
+                    <form id="tripFormElement" method="post" action="{% url 'create_report' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <h5 class="fw-bold">Employee Details</h5>
+                            <input type="text" class="form-control" value="{{ request.user.name }}" readonly>
+                            <input type="text" class="form-control mt-2" value="{{ request.user.employee_id }}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <h5 class="fw-bold">Trip Details</h5>
+                            <select class="form-control" name="vehicle" required {% if editing %}disabled{% endif %}>
+                                <option value="">Select Vehicle</option>
+                                {% for vehicle in vehicles %}
+                                    <option value="{{ vehicle.vehicle_id }}" {% if editing and inspection.vehicle.vehicle_id == vehicle.vehicle_id %}selected{% endif %}>{{ vehicle }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if editing %}
+                            <input type="hidden" name="vehicle" value="{{ inspection.vehicle.vehicle_id }}">
+                            <input type="hidden" name="report_id" value="{{ inspection.report_id }}">
+                            {% endif %}
+                            <input type="text" class="form-control mt-2" name="driver_name" placeholder="Assigned Driver" value="{% if editing %}{{ inspection.driver_name }}{% endif %}">
+                            <input type="date" class="form-control mt-2" name="inspection_date" required value="{% if editing %}{{ inspection.inspection_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+                        <input type="hidden" name="action" id="form_action" value="submit">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'view_reports' %}" class="btn btn-dark page-button">Cancel</a>
+                <div>
+                    <button type="button" class="btn btn-save" onclick="saveAndExit()">Save & Exit</button>
+                    <button type="button" class="btn btn-blue" onclick="showPreDelivery()">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pre-Delivery Inspection (Step 2) -->
+    <div id="preDeliveryForm" class="hidden flex-column justify-content-around" style="height: 100%;">
+        <div class="row">
+            <h3 class="fw-bold">
+                2 Pre-Delivery Inspection
+                {% if editing %}
+                <span class="edit-mode-badge">Editing Report #{{ inspection.report_id }}</span>
+                {% endif %}
+            </h3>
+            <p id="vehicleDetails">{% if editing %}{{ inspection.vehicle }}{% else %}Select a vehicle in step 1{% endif %}</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="table-wrapper">
+                    <table class="inspection-table">
+                        <thead>
+                            <tr>
+                                <th>Vehicle Component</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="part">Battery</td><td><select class="form-control" name="pre_battery">
+                                <option {% if editing and inspection.pre_battery == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.pre_battery == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Lights</td><td><select class="form-control" name="pre_lights">
+                                <option {% if editing and inspection.pre_lights == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.pre_lights == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Oil</td><td><select class="form-control" name="pre_oil">
+                                <option {% if editing and inspection.pre_oil == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.pre_oil == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Water</td><td><select class="form-control" name="pre_water">
+                                <option {% if editing and inspection.pre_water == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.pre_water == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Brakes</td><td><select class="form-control" name="pre_brakes">
+                                <option {% if editing and inspection.pre_brakes == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.pre_brakes == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Air</td><td><select class="form-control" name="pre_air">
+                                <option {% if editing and inspection.pre_air == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.pre_air == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Gas</td><td><select class="form-control" name="pre_gas">
+                                <option {% if editing and inspection.pre_gas == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.pre_gas == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <textarea class="form-control mt-3 comment-field" name="pre_comments" placeholder="Enter comment here...">{% if editing %}{{ inspection.pre_comments }}{% endif %}</textarea>
+                <textarea class="form-control mt-3 comment-field" name="pre_damages" placeholder="Enter damages incurred here...">{% if editing %}{{ inspection.pre_damages }}{% endif %}</textarea>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-dark page-button" onclick="showTripForm()">Back</button>
+            <div>
+                <button type="button" class="btn btn-save" onclick="savePreDeliveryAndExit()">Save & Exit</button>
+                <button type="button" class="btn btn-blue page-button" onclick="showPostDelivery()">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post-Delivery Inspection (Step 3) -->
+    <div id="postDeliveryForm" class="hidden flex-column justify-content-around" style="height: 100%;">
+        <div class="row">
+            <h3 class="fw-bold">
+                3 Post-Delivery Inspection
+                {% if editing %}
+                <span class="edit-mode-badge">Editing Report #{{ inspection.report_id }}</span>
+                {% endif %}
+            </h3>
+            <p id="vehicleDetailsPost">{% if editing %}{{ inspection.vehicle }}{% else %}Select a vehicle in step 1{% endif %}</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="table-wrapper">
+                    <table class="inspection-table">
+                        <thead>
+                            <tr>
+                                <th>Vehicle Component</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="part">Battery</td><td><select class="form-control" name="post_battery">
+                                <option {% if editing and inspection.post_battery == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.post_battery == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Lights</td><td><select class="form-control" name="post_lights">
+                                <option {% if editing and inspection.post_lights == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.post_lights == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Oil</td><td><select class="form-control" name="post_oil">
+                                <option {% if editing and inspection.post_oil == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.post_oil == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Water</td><td><select class="form-control" name="post_water">
+                                <option {% if editing and inspection.post_water == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.post_water == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Brakes</td><td><select class="form-control" name="post_brakes">
+                                <option {% if editing and inspection.post_brakes == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.post_brakes == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Air</td><td><select class="form-control" name="post_air">
+                                <option {% if editing and inspection.post_air == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.post_air == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                            <tr><td class="part">Gas</td><td><select class="form-control" name="post_gas">
+                                <option {% if editing and inspection.post_gas == 'OK' %}selected{% endif %}>OK</option>
+                                <option {% if editing and inspection.post_gas == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                            </select></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <textarea class="form-control mt-3 comment-field" name="post_comments" placeholder="Enter comment here...">{% if editing %}{{ inspection.post_comments }}{% endif %}</textarea>
+                <textarea class="form-control mt-3 comment-field" name="post_damages" placeholder="Enter damages incurred here...">{% if editing %}{{ inspection.post_damages }}{% endif %}</textarea>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-dark page-button" onclick="showPreDelivery()">Back</button>
+            <div>
+                <button type="button" class="btn btn-save" onclick="savePostDeliveryAndExit()">Save & Exit</button>
+                <button type="button" class="btn btn-blue page-button" onclick="submitForm()">Finish</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update vehicle details when a vehicle is selected
+    document.addEventListener('DOMContentLoaded', function() {
+        const vehicleSelect = document.querySelector('select[name="vehicle"]');
+        vehicleSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const vehicleText = selectedOption.text;
+            document.getElementById('vehicleDetails').textContent = vehicleText;
+            document.getElementById('vehicleDetailsPost').textContent = vehicleText;
+        });
+        
+        // Show the correct form section when editing
+        {% if editing %}
+            // First, hide all sections
+            document.getElementById("tripForm").classList.add("hidden");
+            document.getElementById("tripForm").classList.remove("d-flex");
+            document.getElementById("preDeliveryForm").classList.add("hidden");
+            document.getElementById("preDeliveryForm").classList.remove("d-flex");
+            document.getElementById("postDeliveryForm").classList.add("hidden");
+            document.getElementById("postDeliveryForm").classList.remove("d-flex");
+            
+            // Then, show only the appropriate section based on server-determined initial section
+            {% if initial_section == 'post' %}
+                showPostDelivery();
+            {% elif initial_section == 'pre' %}
+                showPreDelivery();
+            {% else %}
+                showTripForm();
+            {% endif %}
+        {% endif %}
+    });
+
+    function showPreDelivery() {
+        // Validate vehicle selection before proceeding
+        const vehicleSelect = document.querySelector('select[name="vehicle"]');
+        const dateInput = document.querySelector('input[name="inspection_date"]');
+        
+        if (vehicleSelect.value === "") {
+            alert("Please select a vehicle before proceeding.");
+            return;
+        }
+        
+        if (dateInput.value === "") {
+            alert("Please select an inspection date before proceeding.");
+            return;
+        }
+        
+        document.getElementById("tripForm").classList.add("hidden");
+        document.getElementById("tripForm").classList.remove("d-flex");
+
+        document.getElementById("preDeliveryForm").classList.remove("hidden");
+        document.getElementById("preDeliveryForm").classList.add("d-flex");
+
+        document.getElementById("postDeliveryForm").classList.add("hidden");
+        document.getElementById("postDeliveryForm").classList.remove("d-flex");
+    }
+
+    function showPostDelivery() {
+        document.getElementById("preDeliveryForm").classList.add("hidden");
+        document.getElementById("preDeliveryForm").classList.remove("d-flex");
+
+        document.getElementById("postDeliveryForm").classList.remove("hidden");
+        document.getElementById("postDeliveryForm").classList.add("d-flex");
+    }
+
+    function showTripForm() {
+        document.getElementById("tripForm").classList.remove("hidden");
+        document.getElementById("tripForm").classList.add("d-flex");
+
+        document.getElementById("preDeliveryForm").classList.add("hidden");
+        document.getElementById("preDeliveryForm").classList.remove("d-flex");
+
+        document.getElementById("postDeliveryForm").classList.add("hidden");
+        document.getElementById("postDeliveryForm").classList.remove("d-flex");
+    }
+    
+    function saveAndExit() {
+        document.getElementById('form_action').value = 'save_exit';
+        const form = document.getElementById('tripFormElement');
+        form.submit();
+    }
+    
+    function savePreDeliveryAndExit() {
+        document.getElementById('form_action').value = 'save_exit';
+        
+        // Collect data from all steps
+        const form = document.getElementById('tripFormElement');
+        
+        // Collect pre-delivery data
+        const preElements = document.querySelectorAll('[name^="pre_"]');
+        preElements.forEach(element => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = element.name;
+            input.value = element.value;
+            form.appendChild(input);
+        });
+        
+        // Submit the form
+        form.submit();
+    }
+    
+    function savePostDeliveryAndExit() {
+        document.getElementById('form_action').value = 'save_exit';
+        
+        // Collect data from all steps
+        const form = document.getElementById('tripFormElement');
+        
+        // Collect pre-delivery data
+        const preElements = document.querySelectorAll('[name^="pre_"]');
+        preElements.forEach(element => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = element.name;
+            input.value = element.value;
+            form.appendChild(input);
+        });
+        
+        // Collect post-delivery data
+        const postElements = document.querySelectorAll('[name^="post_"]');
+        postElements.forEach(element => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = element.name;
+            input.value = element.value;
+            form.appendChild(input);
+        });
+        
+        // Submit the form
+        form.submit();
+    }
+    
+    function submitForm() {
+        // Set the form action to submit
+        document.getElementById('form_action').value = 'submit';
+        
+        // Collect data from all steps
+        const form = document.getElementById('tripFormElement');
+        
+        // Collect pre-delivery data
+        const preElements = document.querySelectorAll('[name^="pre_"]');
+        preElements.forEach(element => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = element.name;
+            input.value = element.value;
+            form.appendChild(input);
+        });
+        
+        // Collect post-delivery data
+        const postElements = document.querySelectorAll('[name^="post_"]');
+        postElements.forEach(element => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = element.name;
+            input.value = element.value;
+            form.appendChild(input);
+        });
+        
+        // Submit the form
+        form.submit();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | PMC Vehicle Management System</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    
+    <style>
+        body {
+            background-color: #0b2475;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            width: 450px;
+            padding: 30px;
+        }
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo-img {
+            width: 80px;
+            height: auto;
+            margin-bottom: 8px;
+        }
+        .system-title {
+            font-size: 16px;
+            color: #0b2475;
+            margin-top: 5px;
+        }
+        .form-label {
+            color: #333;
+            font-weight: normal;
+        }
+        .form-control {
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        .btn-login {
+            background-color: #0b2475;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .forgot-password {
+            text-align: right;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .forgot-password a {
+            color: #666;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo-container">
+            <!-- Use a simple placeholder logo to ensure the design works -->
+            <img src="{% static 'media/vehicle_photos/PMC_LOGO.png' %}" alt="PMC Logo" class="logo-img" onerror="this.onerror=null; this.src='/media/vehicle_photos/PMC_LOGO.png';">
+            <h1 class="system-title">Vehicle Management System</h1>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-danger">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="employee_id" class="form-label">Employee ID</label>
+                <input type="text" name="employee_id" id="employee_id" class="form-control" placeholder="Enter Employee ID" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" name="password" id="password" class="form-control" placeholder="Enter password" required>
+            </div>
+
+            <button type="submit" class="btn btn-login">Log in</button>
+            
+            <div class="forgot-password">
+                <a href="#">Forgot password?</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

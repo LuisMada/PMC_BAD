@@ -1,0 +1,108 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard | {% endblock %}
+
+{% block extra_styles %}
+<style>
+    .card {
+        transition: transform 0.2s;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+    }
+    .card-img-top {
+        border-radius: 0;
+    }
+    .action-button {
+        transition: transform 0.2s;
+    }
+    .action-button:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    {% if request.user.is_authenticated %}
+    <div class="mt-4">
+        <h2 class="fw-bold">Welcome, {{ request.user.name }}</h2>
+
+        <div class="d-flex mt-4 action-buttons">
+            <div class="action-button-container text-center">
+                <a href="{% url 'view_reports' %}" class="btn btn-light shadow p-4 btn-blue action-button">
+                    <i class="bi bi-file-earmark-text fs-1"></i>
+                </a>
+                <p class="mt-2 action-button-text">View Reports</p>
+            </div>
+
+            <div class="action-button-container text-center">
+                {% if user.role == "Warehouse Personnel" %}
+                    <a href="{% url 'create_report' %}" class="btn btn-light shadow p-4 btn-blue action-button">
+                        <i class="bi bi-pencil fs-1"></i>
+                    </a>
+                    <p class="mt-2 action-button-text">New Inspection Report</p>
+                {% else %}
+                    <button class="btn btn-light shadow p-4 btn-blue action-button" disabled>
+                        <i class="bi bi-pencil fs-1"></i>
+                    </button>
+                    <p class="mt-2 action-button-text text-muted">New Inspection Report</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Vehicle Availability Section -->
+        <div class="mt-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="fw-bold">Vehicle Availability</h3>
+                <div>
+                    <span class="badge bg-success me-2">Operational</span>
+                    <span class="badge bg-warning text-dark me-2">In Repair</span>
+                    <span class="badge bg-danger me-2">Unavailable</span>
+                </div>
+            </div>
+
+            <div class="row">
+                {% for vehicle in vehicles %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center
+                                {% if vehicle.status == 'Operational' %} bg-success text-white
+                                {% elif vehicle.status == 'In Repair' %} bg-warning text-dark
+                                {% else %} bg-danger text-white {% endif %}">
+                                <span class="fw-bold">{{ vehicle.plate_number }}</span>
+                                <span>{{ vehicle.status }}</span>
+                            </div>
+                            {% if vehicle.photo %}
+                                <img src="{{ vehicle.photo.url }}" class="card-img-top" alt="{{ vehicle.vehicle_make }} {{ vehicle.vehicle_model }}" style="height: 180px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                                    <i class="bi bi-car-front text-secondary" style="font-size: 3rem;"></i>
+                                </div>
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ vehicle.vehicle_make }} - {{ vehicle.vehicle_model }}</h5>
+                                {% if vehicle.year %}<p class="card-text">Year: {{ vehicle.year }}</p>{% endif %}
+                                {% if vehicle.last_maintenance %}<p class="card-text">Last Maintenance: {{ vehicle.last_maintenance|date:"M d, Y" }}</p>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            No vehicles available.
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+        <div class="text-center mt-5">
+            <p>Please log in to continue.</p>
+        </div>
+    {% endif %}
+{% endblock %}

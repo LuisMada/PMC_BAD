@@ -1,0 +1,197 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Inspection Reports | {% endblock %}
+
+{% block extra_styles %}
+<style>
+    .table-container {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .report-header {
+        background-color: #334481;
+        color: white;
+    }
+    .report-row {
+        transition: background-color 0.2s;
+    }
+    .report-row:hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #334481;
+        border-color: #334481;
+    }
+    .pagination .page-link {
+        color: #334481;
+    }
+    .open-report-btn {
+        color: #334481;
+        margin: 0 5px;
+    }
+    .edit-report-btn {
+        color: #334481;
+        margin: 0 5px;
+    }
+    .delete-report-btn {
+        color: #dc3545;
+        margin: 0 5px;
+    }
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .status-draft {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .status-partial {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .status-complete {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Inspection Reports</h2>
+        {% if user.role == "Warehouse Personnel" %}
+        <a href="{% url 'create_report' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>New Inspection
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="table-container">
+        <table class="table table-hover mb-0">
+            <thead class="report-header">
+                <tr>
+                    <th scope="col">IR#</th>
+                    <th scope="col">Date Created</th>
+                    <th scope="col">Vehicle</th>
+                    <th scope="col">Plate Number</th>
+                    <th scope="col">Issued by</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr class="report-row">
+                    <td>IR{{ report.report_id }}</td>
+                    <td>{{ report.inspection_date|date:"M d, Y" }}</td>
+                    <td>{{ report.vehicle.vehicle_make }} {{ report.vehicle.vehicle_model }}</td>
+                    <td>{{ report.vehicle.plate_number }}</td>
+                    <td>{{ report.inspector.name }}</td>
+                    <td>
+                        {% if report.is_submitted %}
+                            <span class="status-badge status-complete">Complete</span>
+                        {% elif report.completion_status == 'Pre-Delivery Only' %}
+                            <span class="status-badge status-partial">Pre-Delivery Only</span>
+                        {% else %}
+                            <span class="status-badge status-draft">Draft</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="action-buttons">
+                            {% if not report.is_submitted and report.inspector == user %}
+                                <a href="{% url 'create_report' %}?report_id={{ report.report_id }}" class="edit-report-btn" title="Edit Report">
+                                    <i class="bi bi-pencil-square fs-5"></i>
+                                </a>
+                                <a href="#" class="delete-report-btn text-danger" data-bs-toggle="modal" data-bs-target="#deleteReportModal{{ report.report_id }}" title="Delete Report">
+                                    <i class="bi bi-trash fs-5"></i>
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'generate_report_pdf' report.report_id %}" class="open-report-btn" target="_blank" title="View PDF">
+                                <i class="bi bi-box-arrow-up-right fs-5"></i>
+                            </a>
+                        </div>
+                        
+                        <!-- Delete Confirmation Modal -->
+                        <div class="modal fade" id="deleteReportModal{{ report.report_id }}" tabindex="-1" aria-labelledby="deleteReportModalLabel{{ report.report_id }}" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="deleteReportModalLabel{{ report.report_id }}">Confirm Delete</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                Are you sure you want to delete inspection report #{{ report.report_id }} for {{ report.vehicle }}?
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{% url 'delete_report' report.report_id %}" method="post">
+                                  {% csrf_token %}
+                                  <button type="submit" class="btn btn-danger">Delete</button>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4">No inspection reports found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Inspection reports pagination">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

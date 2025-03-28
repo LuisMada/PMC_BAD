@@ -1,0 +1,19 @@
+
+
+.login-card, .register-card {
+    background-color: #F0F4F8;
+
+    input, input:focus, input:active,
+    select, select:focus, select:active {
+        background-color: #F0F4F8;
+        color: #081E67 !important;
+        border: #081E67 2px solid;
+        border-radius: 3px;
+    }
+
+    input::placeholder, select::placeholder {
+        font-size: 14px;
+        font-weight: light !important;
+        color: #081E67 !important;
+    }
+}
