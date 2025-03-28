@@ -135,6 +135,12 @@
         height: 180px;
         overflow: hidden;
     }
+    .filter-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
 </style>
 {% endblock %}
 
@@ -152,7 +158,7 @@
         <div class="action-text">Manage Vehicles</div>
     </a>
     
-    <a href="#" class="action-button">
+    <a href="{% url 'view_reports' %}" class="action-button">
         <div class="action-icon">
             <i class="bi bi-file-text"></i>
         </div>
@@ -172,6 +178,28 @@
         </div>
         <div class="action-text">Register Users</div>
     </a>
+</div>
+
+<!-- Vehicle Filter Section -->
+<div class="filter-section">
+    <form method="get" class="row g-3">
+        <div class="col-md-4">
+            <label for="search" class="form-label">Search</label>
+            {{ filter_form.search }}
+        </div>
+        <div class="col-md-4">
+            <label for="status" class="form-label">Status</label>
+            {{ filter_form.status }}
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">
+                <i class="bi bi-search"></i> Filter
+            </button>
+            <a href="{% url 'VMT_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Clear
+            </a>
+        </div>
+    </form>
 </div>
 
 <!-- Vehicle Availability Section -->
@@ -225,7 +253,7 @@
         {% empty %}
             <div class="col-12">
                 <div class="alert alert-info">
-                    No vehicles available. <a href="{% url 'add_vehicle' %}">Add a vehicle</a> to get started.
+                    No vehicles available with the current filter settings. <a href="{% url 'add_vehicle' %}">Add a vehicle</a> or adjust your filters.
                 </div>
             </div>
         {% endfor %}

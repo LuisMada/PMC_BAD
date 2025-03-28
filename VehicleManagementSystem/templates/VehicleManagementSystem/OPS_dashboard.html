@@ -29,6 +29,16 @@
         .vehicle-card:hover {
             transform: translateY(-5px);
         }
+        .filter-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .badge-count {
+            font-size: 14px;
+            margin-left: 5px;
+        }
     </style>
 {% endblock %}
 
@@ -37,15 +47,50 @@
         <div class="mt-4">
             <h2 class="fw-bold">Welcome, {{ request.user.name }}</h2>
 
+            <!-- Vehicle Filter Section -->
+            <div class="filter-section mt-4">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Search</label>
+                        {{ filter_form.search }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="status" class="form-label">Status</label>
+                        {{ filter_form.status }}
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-dark me-2">
+                            <i class="bi bi-search"></i> Filter
+                        </button>
+                        <a href="{% url 'OPS_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Status summary -->
+            <div class="mb-4">
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="badge bg-success rounded-pill p-2">
+                        Operational <span class="badge bg-light text-dark badge-count">{{ operational_count }}</span>
+                    </div>
+                    <div class="badge bg-warning text-dark rounded-pill p-2">
+                        In Repair <span class="badge bg-light text-dark badge-count">{{ repair_count }}</span>
+                    </div>
+                    <div class="badge bg-danger rounded-pill p-2">
+                        Unavailable <span class="badge bg-light text-dark badge-count">{{ unavailable_count }}</span>
+                    </div>
+                    <div class="badge bg-primary rounded-pill p-2">
+                        Total <span class="badge bg-light text-dark badge-count">{{ vehicles|length }}</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Vehicle Availability Section -->
-            <div class="mt-5 vehicle-availability">
+            <div class="mt-3 vehicle-availability">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 class="fw-bold">Vehicle Availability</h3>
-                    <div>
-                        <span class="badge bg-success me-2">Operational</span>
-                        <span class="badge bg-warning text-dark me-2">In Repair</span>
-                        <span class="badge bg-danger me-2">Unavailable</span>
-                    </div>
                 </div>
                 <div class="vehicles">
                     <div class="row mt-3">
@@ -75,7 +120,7 @@
                         {% empty %}
                             <div class="col-12">
                                 <div class="alert alert-info">
-                                    No vehicles available.
+                                    No vehicles available with the current filter settings.
                                 </div>
                             </div>
                         {% endfor %}

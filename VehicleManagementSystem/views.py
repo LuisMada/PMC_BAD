@@ -167,6 +167,7 @@ def delete_report(request, report_id):
     if request.method == "POST":
         report.delete()
         messages.success(request, f"Report #{report_id} has been deleted.")
+    
         return redirect("view_reports")
     
     # If not POST, redirect to reports view
@@ -534,16 +535,33 @@ def management_dashboard(request):
         messages.error(request, "You don't have permission to access this page.")
         return redirect("WH_dashboard")
     
-    # Fetch all vehicles from the database
+    # Create filter form
+    filter_form = VehicleFilterForm(request.GET)
     vehicles = Vehicle.objects.all()
     
+    # Apply filters if provided
+    if filter_form.is_valid():
+        status = filter_form.cleaned_data.get('status')
+        search = filter_form.cleaned_data.get('search')
+        
+        if status:
+            vehicles = vehicles.filter(status=status)
+            
+        if search:
+            vehicles = vehicles.filter(
+                Q(plate_number__icontains=search) | 
+                Q(vehicle_make__icontains=search) | 
+                Q(vehicle_model__icontains=search)
+            )
+    
     # Count vehicles by status
-    operational_count = Vehicle.objects.filter(status='Operational').count()
-    repair_count = Vehicle.objects.filter(status='In Repair').count()
-    unavailable_count = Vehicle.objects.filter(status='Unavailable').count()
+    operational_count = vehicles.filter(status='Operational').count()
+    repair_count = vehicles.filter(status='In Repair').count()
+    unavailable_count = vehicles.filter(status='Unavailable').count()
     
     context = {
         'vehicles': vehicles,
+        'filter_form': filter_form,
         'operational_count': operational_count,
         'repair_count': repair_count,
         'unavailable_count': unavailable_count
@@ -553,10 +571,39 @@ def management_dashboard(request):
 
 @login_required
 def dashboard(request):
-    # Fetch real vehicles from the database instead of using sample data
+    # Create filter form
+    filter_form = VehicleFilterForm(request.GET)
     vehicles = Vehicle.objects.all()
     
-    return render(request, "VehicleManagementSystem/WH_dashboard.html", {"vehicles": vehicles})
+    # Apply filters if provided
+    if filter_form.is_valid():
+        status = filter_form.cleaned_data.get('status')
+        search = filter_form.cleaned_data.get('search')
+        
+        if status:
+            vehicles = vehicles.filter(status=status)
+            
+        if search:
+            vehicles = vehicles.filter(
+                Q(plate_number__icontains=search) | 
+                Q(vehicle_make__icontains=search) | 
+                Q(vehicle_model__icontains=search)
+            )
+    
+    # Count vehicles by status
+    operational_count = vehicles.filter(status='Operational').count()
+    repair_count = vehicles.filter(status='In Repair').count()
+    unavailable_count = vehicles.filter(status='Unavailable').count()
+    
+    context = {
+        'vehicles': vehicles,
+        'filter_form': filter_form,
+        'operational_count': operational_count,
+        'repair_count': repair_count,
+        'unavailable_count': unavailable_count
+    }
+    
+    return render(request, "VehicleManagementSystem/WH_dashboard.html", context)
 
 @login_required
 def driver_dashboard(request):
@@ -565,8 +612,37 @@ def driver_dashboard(request):
         messages.error(request, "You don't have permission to access this page.")
         return redirect("WH_dashboard")
     
-    # Fetch real vehicles from the database instead of using sample data
+    # Create filter form
+    filter_form = VehicleFilterForm(request.GET)
     vehicles = Vehicle.objects.all()
     
-    return render(request, "VehicleManagementSystem/OPS_dashboard.html", {"vehicles": vehicles})
+    # Apply filters if provided
+    if filter_form.is_valid():
+        status = filter_form.cleaned_data.get('status')
+        search = filter_form.cleaned_data.get('search')
+        
+        if status:
+            vehicles = vehicles.filter(status=status)
+            
+        if search:
+            vehicles = vehicles.filter(
+                Q(plate_number__icontains=search) | 
+                Q(vehicle_make__icontains=search) | 
+                Q(vehicle_model__icontains=search)
+            )
+    
+    # Count vehicles by status
+    operational_count = vehicles.filter(status='Operational').count()
+    repair_count = vehicles.filter(status='In Repair').count()
+    unavailable_count = vehicles.filter(status='Unavailable').count()
+    
+    context = {
+        'vehicles': vehicles,
+        'filter_form': filter_form,
+        'operational_count': operational_count,
+        'repair_count': repair_count,
+        'unavailable_count': unavailable_count
+    }
+    
+    return render(request, "VehicleManagementSystem/OPS_dashboard.html", context)
 
