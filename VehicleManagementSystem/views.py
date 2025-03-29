@@ -1,11 +1,13 @@
+import datetime
+from django.urls import reverse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import UserRegistrationForm, VehicleForm, VehicleDamageForm, VehicleFilterForm, PasswordChangeForm
+from .forms import UserRegistrationForm, VehicleForm, VehicleDamageForm, VehicleFilterForm, PasswordChangeForm, DamageReportForm
 from django.db.models import Q
 from django.http import JsonResponse
-from .models import Vehicle, VehicleDamage, VehicleInspection, CustomUser
+from .models import Vehicle, VehicleDamage, VehicleInspection, CustomUser, DamageReport
 
 from django.core.paginator import Paginator
 from django.http import HttpResponse
@@ -87,7 +89,6 @@ def create_report(request):
             inspection.pre_air = request.POST.get('pre_air')
             inspection.pre_gas = request.POST.get('pre_gas')
             inspection.pre_comments = request.POST.get('pre_comments', '')
-            inspection.pre_damages = request.POST.get('pre_damages', '')
         
         # Update post-delivery fields if they exist in POST
         if 'post_battery' in request.POST:
@@ -114,7 +115,16 @@ def create_report(request):
             return redirect('view_reports')
         else:  # submit action
             messages.success(request, "Vehicle inspection report completed successfully!")
-            return redirect('generate_report_pdf', report_id=inspection.report_id)
+            
+            # Generate PDF with automatic redirect to dashboard
+            pdf_url = reverse('generate_report_pdf', kwargs={'report_id': inspection.report_id})
+            dashboard_url = reverse('WH_dashboard')
+            
+            # Return a page that initiates the PDF download and then redirects
+            return render(request, 'VehicleManagementSystem/pdf_download_redirect.html', {
+                'pdf_url': pdf_url,
+                'redirect_url': dashboard_url
+            })
     
     # Check if we're editing an existing report
     report_id = request.GET.get('report_id')
@@ -184,124 +194,177 @@ def generate_report_pdf(request, report_id):
     response['Content-Disposition'] = f'attachment; filename="vehicle_inspection_{inspection.report_id}.pdf"'
     
     # Create the PDF document
-    doc = SimpleDocTemplate(response, pagesize=letter)
+    doc = SimpleDocTemplate(response, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
     
     # Get styles
     styles = getSampleStyleSheet()
     title_style = styles['Heading1']
+    title_style.alignment = 1  # Center alignment
     subtitle_style = styles['Heading2']
+    subtitle_style.alignment = 1  # Center alignment
     normal_style = styles['Normal']
     
-    # Add title
-    elements.append(Paragraph("Vehicle Inspection Report", title_style))
+    # Create company heading
+    logo_text = Paragraph("PETROZONE MARKETING CORPORATION", title_style)
+    elements.append(logo_text)
+    subtitle = Paragraph("Vehicle Management System", subtitle_style)
+    elements.append(subtitle)
     elements.append(Spacer(1, 0.25*inch))
     
-    # Add basic information
-    elements.append(Paragraph("Basic Information", subtitle_style))
-    
-    # Vehicle and Inspector Information
-    vehicle_info = [
-        ["Report ID:", str(inspection.report_id)],
-        ["Vehicle:", f"{inspection.vehicle.vehicle_make} - {inspection.vehicle.vehicle_model} ({inspection.vehicle.plate_number})"],
-        ["Inspector:", inspection.inspector.name],
-        ["Date:", inspection.inspection_date.strftime("%Y-%m-%d")],
-    ]
-    
-    # Create vehicle info table
-    info_table = Table(vehicle_info, colWidths=[2*inch, 4*inch])
-    info_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('PADDING', (0, 0), (-1, -1), 6),
+    # Create the inspection report title with a blue background
+    report_title_data = [["VEHICLE INSPECTION REPORT"]]
+    report_title_table = Table(report_title_data, colWidths=[6.5*inch])
+    report_title_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, 0), colors.Color(0.2, 0.3, 0.7)),  # Dark blue
+        ('TEXTCOLOR', (0, 0), (0, 0), colors.white),
+        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (0, 0), 14),
+        ('PADDING', (0, 0), (0, 0), 6),
     ]))
-    elements.append(info_table)
-    elements.append(Spacer(1, 0.25*inch))
+    elements.append(report_title_table)
     
-    # Pre-Delivery Inspection
-    elements.append(Paragraph("Pre-Delivery Inspection", subtitle_style))
-    
-    pre_inspection_data = [
-        ["Component", "Status"],
-        ["Battery", inspection.pre_battery],
-        ["Lights", inspection.pre_lights],
-        ["Oil", inspection.pre_oil],
-        ["Water", inspection.pre_water],
-        ["Brakes", inspection.pre_brakes],
-        ["Air", inspection.pre_air],
-        ["Gas", inspection.pre_gas],
+    # Basic information table
+    basic_info_data = [
+        ["Date of Inspection", f"{inspection.inspection_date.strftime('%Y-%m-%d')}", "", ""],
+        ["General Information", "", "", ""],
+        ["Assigned Inspector", f"{inspection.inspector.name}", "", ""],
+        ["ID Number", f"{inspection.inspector.employee_id}", "Driver", f"{inspection.driver_name or ''}"],
+        ["Vehicle Model", f"{inspection.vehicle.vehicle_make} - {inspection.vehicle.vehicle_model}", 
+         "Vehicle Plate Number", f"{inspection.vehicle.plate_number}"],
     ]
     
-    pre_table = Table(pre_inspection_data, colWidths=[3*inch, 3*inch])
-    pre_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.blue),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+    # Create a table with the layout seen in the image
+    col_widths = [1.625*inch, 1.625*inch, 1.625*inch, 1.625*inch]
+    basic_info_table = Table(basic_info_data, colWidths=col_widths)
+    
+    # Apply styles to match the image
+    basic_info_table.setStyle(TableStyle([
+        # Borders around all cells
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        
+        # Merge cells for Date row
+        ('SPAN', (1, 0), (3, 0)),
+        
+        # Merge cells for General Information row - span ALL columns
+        ('SPAN', (0, 1), (3, 1)),
+        
+        # Merge cells for Assigned Inspector row
+        ('SPAN', (1, 2), (3, 2)),
+        
+        # Background color for General Information
+        ('BACKGROUND', (0, 1), (3, 1), colors.white),
+        ('ALIGN', (0, 1), (3, 1), 'CENTER'),
+        ('FONTNAME', (0, 1), (3, 1), 'Helvetica-Bold'),
+    ]))
+    elements.append(basic_info_table)
+    
+    # Pre-Delivery Checklist title
+    pre_delivery_title_data = [["Pre-Delivery Checklist"]]
+    pre_delivery_title_table = Table(pre_delivery_title_data, colWidths=[6.5*inch])
+    pre_delivery_title_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+    ]))
+    elements.append(pre_delivery_title_table)
+    
+    # Pre-Delivery Component Table
+    pre_header = [["Vehicle Components", "Status", "Comments"]]
+    pre_components = [
+        ["Battery", inspection.pre_battery or "", inspection.pre_comments or ""],
+        ["Lights", inspection.pre_lights or "", ""],
+        ["Oil", inspection.pre_oil or "", ""],
+        ["Water", inspection.pre_water or "", ""],
+        ["Brakes", inspection.pre_brakes or "", ""],
+        ["Air", inspection.pre_air or "", ""],
+        ["Gas", inspection.pre_gas or "", ""]
+    ]
+    
+    pre_component_data = pre_header + pre_components
+    pre_col_widths = [1.65*inch, 1.65*inch, 3.2*inch]
+    pre_component_table = Table(pre_component_data, colWidths=pre_col_widths)
+    
+    # Apply styles to match the image
+    pre_component_table.setStyle(TableStyle([
+        # Borders around all cells
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        
+        # Center alignment for header row
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('PADDING', (0, 0), (-1, -1), 6),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        
+        # Merge cells for Comments
+        ('SPAN', (2, 1), (2, 7)),
     ]))
-    elements.append(pre_table)
+    elements.append(pre_component_table)
     
-    # Add pre-delivery comments
-    elements.append(Paragraph("Comments:", normal_style))
-    elements.append(Paragraph(inspection.pre_comments or "No comments", normal_style))
+    # Post-Delivery Checklist title
+    post_delivery_title_data = [["Post-Delivery Checklist"]]
+    post_delivery_title_table = Table(post_delivery_title_data, colWidths=[6.5*inch])
+    post_delivery_title_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+    ]))
+    elements.append(post_delivery_title_table)
     
-    # Add pre-delivery damages
-    elements.append(Paragraph("Damages:", normal_style))
-    elements.append(Paragraph(inspection.pre_damages or "No damages reported", normal_style))
-    
-    elements.append(Spacer(1, 0.25*inch))
-    
-    # Post-Delivery Inspection
-    elements.append(Paragraph("Post-Delivery Inspection", subtitle_style))
-    
-    post_inspection_data = [
-        ["Component", "Status"],
-        ["Battery", inspection.post_battery],
-        ["Lights", inspection.post_lights],
-        ["Oil", inspection.post_oil],
-        ["Water", inspection.post_water],
-        ["Brakes", inspection.post_brakes],
-        ["Air", inspection.post_air],
-        ["Gas", inspection.post_gas],
+    # Post-Delivery Component Table
+    post_header = [["Vehicle Components", "Status", "Comments"]]
+    post_components = [
+        ["Battery", inspection.post_battery or "", inspection.post_comments or ""],
+        ["Lights", inspection.post_lights or "", ""],
+        ["Oil", inspection.post_oil or "", ""],
+        ["Water", inspection.post_water or "", ""],
+        ["Brakes", inspection.post_brakes or "", ""],
+        ["Air", inspection.post_air or "", ""],
+        ["Gas", inspection.post_gas or "", ""]
     ]
     
-    post_table = Table(post_inspection_data, colWidths=[3*inch, 3*inch])
-    post_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.blue),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+    post_component_data = post_header + post_components
+    post_col_widths = [1.65*inch, 1.65*inch, 3.2*inch]
+    post_component_table = Table(post_component_data, colWidths=post_col_widths)
+    
+    # Apply styles to match the image
+    post_component_table.setStyle(TableStyle([
+        # Borders around all cells
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        
+        # Center alignment for header row
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('PADDING', (0, 0), (-1, -1), 6),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        
+        # Merge cells for Comments
+        ('SPAN', (2, 1), (2, 7)),
     ]))
-    elements.append(post_table)
+    elements.append(post_component_table)
     
-    # Add post-delivery comments
-    elements.append(Paragraph("Comments:", normal_style))
-    elements.append(Paragraph(inspection.post_comments or "No comments", normal_style))
+    # Damages Incurred section - using post_damages only
+    damages_title_data = [["Damages Incurred"]]
+    damages_title_table = Table(damages_title_data, colWidths=[6.5*inch])
+    damages_title_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+    ]))
+    elements.append(damages_title_table)
     
-    # Add post-delivery damages
-    elements.append(Paragraph("Damages:", normal_style))
-    elements.append(Paragraph(inspection.post_damages or "No damages reported", normal_style))
-    
-    # Add signature lines
-    elements.append(Spacer(1, inch))
-    
-    signature_data = [
-        ["Inspector Signature", "Driver Signature"],
-        ["____________________", "____________________"],
-        [f"Name: {inspection.inspector.name}", "Name: ________________"],
+    # Damages content from post_damages
+    damages_content = [
+        [inspection.post_damages or "No damages incurred"]
     ]
-    
-    sig_table = Table(signature_data, colWidths=[3*inch, 3*inch])
-    sig_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('PADDING', (0, 0), (-1, -1), 6),
+    damages_content_table = Table(damages_content, colWidths=[6.5*inch], rowHeights=[1.5*inch])
+    damages_content_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
     ]))
-    elements.append(sig_table)
+    elements.append(damages_content_table)
+    
+    # Removed signature section as requested
     
     # Build PDF document
     doc.build(elements)
+    
+    # Set a session flag to indicate PDF download and redirect to dashboard
+    request.session['pdf_downloaded'] = True
     
     return response
 
@@ -759,3 +822,300 @@ def reset_password(request, employee_id):
         return redirect("view_accounts")
     
     return redirect("view_accounts")
+
+# Add to views.py
+
+@login_required
+def create_damage_report(request):
+    """View to create a damage report for a vehicle"""
+    # Check if user has the correct role (Vehicle Management Team or Warehouse Personnel)
+    if request.user.role not in ["Vehicle Management Team", "Warehouse Personnel"]:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect("WH_dashboard")
+    
+    vehicles = Vehicle.objects.all()
+    
+    if request.method == "POST":
+        vehicle_id = request.POST.get('vehicle')
+        vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id)
+        action = request.POST.get('action', 'submit')
+        report_id = request.POST.get('report_id')
+        redirect_to_dashboard = request.POST.get('redirect_to_dashboard') == 'true'
+        
+        # Determine if we're updating or creating
+        if report_id:
+            # Updating existing report
+            damage_report = get_object_or_404(DamageReport, report_id=report_id)
+            if damage_report.inspector != request.user:
+                messages.error(request, "You don't have permission to edit this report.")
+                return redirect("view_damage_reports")
+                
+            # If report is already submitted, don't allow edits
+            if damage_report.is_submitted:
+                messages.error(request, "This report has already been submitted and cannot be edited.")
+                return redirect("view_damage_reports")
+        else:
+            # Create new damage report
+            damage_report = DamageReport(
+                vehicle=vehicle,
+                inspector=request.user,
+                inspection_date=request.POST.get('inspection_date')
+            )
+        
+        # Update component damage fields
+        damage_report.battery_damage = request.POST.get('battery_damage', '')
+        damage_report.lights_damage = request.POST.get('lights_damage', '')
+        damage_report.oil_damage = request.POST.get('oil_damage', '')
+        damage_report.water_damage = request.POST.get('water_damage', '')
+        damage_report.brakes_damage = request.POST.get('brakes_damage', '')
+        damage_report.air_damage = request.POST.get('air_damage', '')
+        damage_report.gas_damage = request.POST.get('gas_damage', '')
+        
+        # Update maintenance information
+        damage_report.maintenance_diagnosis = request.POST.get('maintenance_diagnosis', '')
+        damage_report.estimate_repair_time = request.POST.get('estimate_repair_time', '0')
+        damage_report.concerns = request.POST.get('concerns', '')
+        
+        # Mark as submitted if the action is 'submit'
+        if action == 'submit':
+            damage_report.is_submitted = True
+        
+        damage_report.save()
+        
+        if action == 'save_exit':
+            messages.success(request, "Damage report saved successfully. You can complete it later.")
+            return redirect('view_damage_reports')
+        else:  # submit action
+            messages.success(request, "Damage report completed successfully!")
+            
+            # Generate PDF with automatic redirect to dashboard
+            pdf_url = reverse('generate_damage_report_pdf', kwargs={'report_id': damage_report.report_id})
+            
+            # Determine the appropriate dashboard based on user role
+            if request.user.role == "Vehicle Management Team":
+                dashboard_url = reverse('VMT_dashboard')
+            elif request.user.role == "Operations Team":
+                dashboard_url = reverse('OPS_dashboard')
+            else:
+                dashboard_url = reverse('WH_dashboard')
+            
+            # Return a page that initiates the PDF download and then redirects
+            return render(request, 'VehicleManagementSystem/pdf_download_redirect.html', {
+                'pdf_url': pdf_url,
+                'redirect_url': dashboard_url
+            })
+    
+    # Check if we're editing an existing report
+    report_id = request.GET.get('report_id')
+    if report_id:
+        try:
+            damage_report = DamageReport.objects.get(report_id=report_id)
+            
+            # Don't allow editing submitted reports
+            if damage_report.is_submitted:
+                messages.error(request, "This report has already been submitted and cannot be edited.")
+                return redirect("view_damage_reports")
+                
+            if damage_report.inspector != request.user:
+                messages.error(request, "You don't have permission to edit this report.")
+                return redirect("view_damage_reports")
+            
+            context = {
+                'vehicles': vehicles,
+                'damage_report': damage_report,
+                'editing': True
+            }
+        except DamageReport.DoesNotExist:
+            messages.error(request, "Report not found.")
+            return redirect("view_damage_reports")
+    else:
+        context = {
+            'vehicles': vehicles
+        }
+    
+    return render(request, "VehicleManagementSystem/create_damage_report.html", context)
+
+@login_required
+def view_damage_reports(request):
+    """View to display all damage reports"""
+    # Get all damage reports
+    reports = DamageReport.objects.all().order_by('-created_at')
+    
+    # If user is not from Vehicle Management Team, only show reports they created
+    if request.user.role != "Vehicle Management Team":
+        # Warehouse Personnel can see reports they created
+        if request.user.role == "Warehouse Personnel":
+            reports = reports.filter(inspector=request.user)
+    
+    # Apply search filter if provided
+    search_query = request.GET.get('search', '')
+    if search_query:
+        reports = reports.filter(
+            Q(report_id__icontains=search_query) | 
+            Q(vehicle__plate_number__icontains=search_query) | 
+            Q(vehicle__vehicle_make__icontains=search_query) |
+            Q(vehicle__vehicle_model__icontains=search_query)
+        )
+    
+    # Set up pagination
+    paginator = Paginator(reports, 10)  # Show 10 reports per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'reports': page_obj.object_list,
+        'search_query': search_query
+    }
+    
+    return render(request, "VehicleManagementSystem/view_damage_reports.html", context)
+
+@login_required
+def delete_damage_report(request, report_id):
+    """View to handle damage report deletion"""
+    # Get the report
+    report = get_object_or_404(DamageReport, report_id=report_id)
+    
+    # Security checks
+    if request.user.role not in ["Vehicle Management Team", "Warehouse Personnel"] or report.inspector != request.user:
+        messages.error(request, "You don't have permission to delete this report.")
+        return redirect("view_damage_reports")
+    
+    # Only allow deletion of non-submitted reports
+    if report.is_submitted:
+        messages.error(request, "Completed reports cannot be deleted.")
+        return redirect("view_damage_reports")
+    
+    # Ensure POST method for deletion (security)
+    if request.method == "POST":
+        report.delete()
+        messages.success(request, f"Damage Report {report_id} has been deleted.")
+    
+        return redirect("view_damage_reports")
+    
+    # If not POST, show confirmation page
+    context = {
+        'report': report
+    }
+    
+    return render(request, "VehicleManagementSystem/delete_damage_report_confirm.html", context)
+
+@login_required
+def generate_damage_report_pdf(request, report_id):
+    """View to generate a PDF of the damage report"""
+    # Get the damage report
+    damage_report = get_object_or_404(DamageReport, report_id=report_id)
+    
+    # Create the HttpResponse object with PDF headers
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="damage_report_{damage_report.report_id}.pdf"'
+    
+    # Create the PDF document
+    doc = SimpleDocTemplate(response, pagesize=letter)
+    elements = []
+    
+    # Get styles
+    styles = getSampleStyleSheet()
+    title_style = styles['Heading1']
+    subtitle_style = styles['Heading2']
+    normal_style = styles['Normal']
+    
+    # Add title
+    elements.append(Paragraph("Vehicle Damage Report", title_style))
+    elements.append(Spacer(1, 0.25*inch))
+    
+    # Add logo placeholder (in a real implementation, you'd insert the company logo)
+    elements.append(Paragraph("PETROZONE MARKETING CORPORATION", subtitle_style))
+    elements.append(Paragraph("Vehicle Management System", normal_style))
+    elements.append(Spacer(1, 0.25*inch))
+    
+    # Add basic information
+    elements.append(Paragraph("General Information", subtitle_style))
+    
+    # Basic Information Table
+    basic_info = [
+        ["Date of Report", "Date of Last Inspection"],
+        [damage_report.created_at.strftime("%Y-%m-%d"), damage_report.inspection_date.strftime("%Y-%m-%d")],
+        ["Name", "ID Number"],
+        [damage_report.inspector.name, damage_report.inspector.employee_id],
+        ["Vehicle Plate Number", "Vehicle Model (Make)"],
+        [damage_report.vehicle.plate_number, f"{damage_report.vehicle.vehicle_make} - {damage_report.vehicle.vehicle_model}"]
+    ]
+    
+    # Create basic info table
+    info_table = Table(basic_info, colWidths=[3*inch, 3*inch])
+    info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, 0), colors.blue),
+        ('BACKGROUND', (0, 2), (1, 2), colors.blue),
+        ('BACKGROUND', (0, 4), (1, 4), colors.blue),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.white),
+        ('TEXTCOLOR', (0, 2), (1, 2), colors.white),
+        ('TEXTCOLOR', (0, 4), (1, 4), colors.white),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 0.25*inch))
+    
+    # Component Damage Assessment
+    elements.append(Paragraph("Component Damage Assessment", subtitle_style))
+    
+    component_data = [
+        ["Component", "Damage Description"],
+        ["Battery", damage_report.battery_damage or "No damage reported"],
+        ["Lights", damage_report.lights_damage or "No damage reported"],
+        ["Oil", damage_report.oil_damage or "No damage reported"],
+        ["Water", damage_report.water_damage or "No damage reported"],
+        ["Brakes", damage_report.brakes_damage or "No damage reported"],
+        ["Air", damage_report.air_damage or "No damage reported"],
+        ["Gas", damage_report.gas_damage or "No damage reported"],
+    ]
+    
+    component_table = Table(component_data, colWidths=[1.5*inch, 4.5*inch])
+    component_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, 0), colors.blue),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.white),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(component_table)
+    elements.append(Spacer(1, 0.25*inch))
+    
+    # Maintenance Information
+    elements.append(Paragraph("Maintenance Information", subtitle_style))
+    
+    maintenance_data = [
+        ["Maintenance Diagnosis", damage_report.maintenance_diagnosis or "No diagnosis provided"],
+        ["Estimated Time of Repair", damage_report.estimate_repair_time or "0"],
+        ["Concerns", damage_report.concerns or "No concerns noted"]
+    ]
+    
+    maintenance_table = Table(maintenance_data, colWidths=[2*inch, 4*inch])
+    maintenance_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(maintenance_table)
+    
+    # Add signature lines
+    elements.append(Spacer(1, inch))
+    
+    signature_data = [
+        ["Inspector Signature", "Maintenance Personnel Signature"],
+        ["____________________", "____________________"],
+        [f"Name: {damage_report.inspector.name}", "Name: ________________"],
+    ]
+    
+    sig_table = Table(signature_data, colWidths=[3*inch, 3*inch])
+    sig_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(sig_table)
+    
+    # Build PDF document
+    doc.build(elements)
+    
+    return response

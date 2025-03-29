@@ -1,0 +1,207 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Damage Reports | {% endblock %}
+
+{% block extra_styles %}
+<style>
+    .table-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-top: 20px;
+    }
+    .btn-blue {
+        background-color: #1f357d;
+        color: white;
+    }
+    .btn-blue:hover {
+        background-color: #162b63;
+        color: white;
+    }
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .status-draft {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    .status-submitted {
+        background-color: #28a745;
+        color: white;
+    }
+    .action-buttons {
+        white-space: nowrap;
+    }
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .search-box {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        max-width: 400px;
+    }
+    .search-box input {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .search-box button {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+    .pagination {
+        justify-content: center;
+        margin-top: 20px;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #1f357d;
+        border-color: #1f357d;
+    }
+    .pagination .page-link {
+        color: #1f357d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="report-header">
+        <h2>Vehicle Damage Reports</h2>
+        <div class="d-flex">
+            <form method="get" class="search-box me-2">
+                <input type="text" name="search" class="form-control" placeholder="Search reports..." value="{{ search_query }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+            {% if request.user.role in "Vehicle Management Team,Warehouse Personnel" %}
+            <a href="{% url 'create_damage_report' %}" class="btn btn-blue">
+                <i class="bi bi-plus-circle"></i> New Report
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="table-container">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Vehicle</th>
+                    <th>Inspector</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>{{ report.report_id }}</td>
+                    <td>{{ report.vehicle }}</td>
+                    <td>{{ report.inspector.name }}</td>
+                    <td>{{ report.inspection_date }}</td>
+                    <td>
+                        {% if report.is_submitted %}
+                        <span class="status-badge status-submitted">Submitted</span>
+                        {% else %}
+                        <span class="status-badge status-draft">Draft</span>
+                        {% endif %}
+                    </td>
+                    <td class="action-buttons">
+                        <a href="{% url 'generate_damage_report_pdf' report.report_id %}" class="btn btn-sm btn-primary" title="Download PDF">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </a>
+                        
+                        {% if not report.is_submitted and report.inspector == request.user %}
+                        <a href="{% url 'create_damage_report' %}?report_id={{ report.report_id }}" class="btn btn-sm btn-warning" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        
+                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ report.damage_id }}" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        
+                        <!-- Delete Confirmation Modal -->
+                        <div class="modal fade" id="deleteModal{{ report.damage_id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ report.damage_id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="deleteModalLabel{{ report.damage_id }}">Confirm Delete</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        Are you sure you want to delete damage report <strong>{{ report.report_id }}</strong>?
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <form action="{% url 'delete_damage_report' report.report_id %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">No damage reports found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="First">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for i in page_obj.paginator.page_range %}
+                {% if page_obj.number == i %}
+                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ i }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ i }}</a></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="Last">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

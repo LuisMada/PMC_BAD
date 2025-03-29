@@ -1,0 +1,48 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Downloading Report | {% endblock %}
+
+{% block extra_styles %}
+<style>
+    .loading-container {
+        text-align: center;
+        margin-top: 100px;
+    }
+    .spinner {
+        border: 6px solid #f3f3f3;
+        border-top: 6px solid #1f357d;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="loading-container">
+        <h3>Your report is being downloaded...</h3>
+        <div class="spinner"></div>
+        <p>You will be redirected to the dashboard in a moment.</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Open PDF in a new window/tab to start download
+        window.open('{{ pdf_url }}', '_blank');
+        
+        // Wait a moment to ensure the download starts, then redirect
+        setTimeout(function() {
+            window.location.href = '{{ redirect_url }}';
+        }, 2000); // 2-second delay
+    });
+</script>
+{% endblock %}

@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     login_view, logout_view, register_view, dashboard, driver_dashboard, management_dashboard, 
     create_report, manage_vehicles, add_vehicle, edit_vehicle, delete_vehicle, add_vehicle_damage,
-    change_password, generate_report_pdf, view_reports, delete_report, 
+    change_password, generate_report_pdf, view_reports, delete_report, view_damage_reports, create_damage_report, delete_damage_report, generate_damage_report_pdf,
     view_accounts, edit_account, delete_account, reset_password  # Add new view functions
 )
 
@@ -36,4 +36,10 @@ urlpatterns = [
     path("accounts/edit/<str:employee_id>/", edit_account, name="edit_account"),
     path("accounts/delete/<str:employee_id>/", delete_account, name="delete_account"),
     path("accounts/reset-password/<str:employee_id>/", reset_password, name="reset_password"),
+
+    # Add these to the urlpatterns list
+    path("damage/reports/", view_damage_reports, name="view_damage_reports"),
+    path("damage/create/", create_damage_report, name="create_damage_report"),
+    path("damage/report/<str:report_id>/delete/", delete_damage_report, name="delete_damage_report"),
+    path("damage/report/<str:report_id>/pdf/", generate_damage_report_pdf, name="generate_damage_report_pdf"),
 ]

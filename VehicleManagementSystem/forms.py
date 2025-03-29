@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import CustomUser, Vehicle, VehicleDamage, VehicleInspection
+from .models import CustomUser, Vehicle, VehicleDamage, VehicleInspection, DamageReport
 
 class VehicleInspectionForm(forms.ModelForm):
     class Meta:
@@ -129,4 +129,27 @@ class PasswordChangeForm(forms.Form):
         return cleaned_data
         
 
-        
+# Add to forms.py
+
+class DamageReportForm(forms.ModelForm):
+    class Meta:
+        model = DamageReport
+        fields = [
+            'vehicle', 'inspection_date',
+            'battery_damage', 'lights_damage', 'oil_damage', 'water_damage', 
+            'brakes_damage', 'air_damage', 'gas_damage',
+            'maintenance_diagnosis', 'estimate_repair_time', 'concerns'
+        ]
+        widgets = {
+            'inspection_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'battery_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
+            'lights_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
+            'oil_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
+            'water_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
+            'brakes_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
+            'air_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
+            'gas_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
+            'maintenance_diagnosis': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
+            'estimate_repair_time': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter estimated repair time'}),
+            'concerns': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter concerns here'})
+        }

@@ -1,0 +1,440 @@
+{% extends "VehicleManagementSystem/base.html" %}
+{% load static %}
+
+{% block title %}Damage Report | {% endblock %}
+
+{% block extra_styles %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .form-container {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+        margin: auto;
+    }
+    .btn-blue {
+        background-color: #1f357d;
+        color: white;
+        border-radius: 6px;
+        padding: 10px 20px;
+        font-weight: bold;
+    }
+    .btn-blue:hover {
+        background-color: #162b63;
+    }
+    .btn-save {
+        background-color: #28a745;
+        color: white;
+        border-radius: 6px;
+        padding: 10px 20px;
+        font-weight: bold;
+    }
+    .btn-save:hover {
+        background-color: #218838;
+    }
+    .hidden {
+        display: none;
+    }
+    .table-wrapper {
+        border-radius: 10px;
+        overflow: hidden;
+        border-bottom: 15px solid #394B85;
+    }
+    .damage-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden; 
+        border-bottom: 15px solid #394B85;
+    }
+    .damage-table th {
+        background-color: #1f357d;
+        color: white;
+        padding: 10px;
+        text-align: left;
+    }
+    .damage-table td {
+        padding: 4px;
+    }
+    .damage-table .component {
+        font-size: 21px;
+        font-weight: 500;
+    }
+    .diagnosis-field {
+        border-color: #394B85;
+        border-radius: 10px;
+        width: 100%;
+    }
+    .page-button {
+        width: 230px; 
+        height: 45px;
+    }
+    .edit-mode-badge {
+        background-color: #ffc107;
+        color: #212529;
+        font-weight: bold;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin-left: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="height: 100%">
+    <!-- Basic Information (Step 1) -->
+    <div id="basicInfoForm" class="d-flex flex-column justify-content-around" style="height: 100%;">
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                <h3 class="fw-bold">
+                    1 Basic Information
+                    {% if editing %}
+                    <span class="edit-mode-badge">Editing Report #{{ damage_report.report_id }}</span>
+                    {% endif %}
+                </h3>
+                <div class="form-container mt-4">
+                    <form id="basicInfoFormElement" method="post" action="{% url 'create_damage_report' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <h5 class="fw-bold">Employee Details</h5>
+                            <input type="text" class="form-control" value="{{ request.user.name }}" readonly>
+                            <input type="text" class="form-control mt-2" value="{{ request.user.employee_id }}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <h5 class="fw-bold">Vehicle Details</h5>
+                            <select class="form-control" name="vehicle" required {% if editing %}disabled{% endif %}>
+                                <option value="">Select Vehicle</option>
+                                {% for vehicle in vehicles %}
+                                    <option value="{{ vehicle.vehicle_id }}" {% if editing and damage_report.vehicle.vehicle_id == vehicle.vehicle_id %}selected{% endif %}>{{ vehicle }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if editing %}
+                            <input type="hidden" name="vehicle" value="{{ damage_report.vehicle.vehicle_id }}">
+                            <input type="hidden" name="report_id" value="{{ damage_report.report_id }}">
+                            {% endif %}
+                            <input type="date" class="form-control mt-2" name="inspection_date" required value="{% if editing %}{{ damage_report.inspection_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+                        <input type="hidden" name="action" id="form_action" value="submit">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'view_damage_reports' %}" class="btn btn-dark page-button">Cancel</a>
+                <div>
+                    <button type="button" class="btn btn-save" onclick="saveAndExit()">Save & Exit</button>
+                    <button type="button" class="btn btn-blue page-button" onclick="showDamageAssessment()">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Damage Assessment (Step 2) -->
+    <div id="damageAssessmentForm" class="hidden flex-column justify-content-around" style="height: 100%;">
+        <div class="row">
+            <h3 class="fw-bold">
+                2 Damage Assessment
+                {% if editing %}
+                <span class="edit-mode-badge">Editing Report #{{ damage_report.report_id }}</span>
+                {% endif %}
+            </h3>
+            <p id="vehicleDetails">{% if editing %}{{ damage_report.vehicle }}{% else %}Select a vehicle in step 1{% endif %}</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                <div class="table-wrapper">
+                    <table class="damage-table">
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Damage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="component">Battery</td>
+                                <td><input type="text" class="form-control diagnosis-field" name="battery_damage" placeholder="Enter diagnosis" value="{% if editing %}{{ damage_report.battery_damage }}{% endif %}"></td>
+                            </tr>
+                            <tr>
+                                <td class="component">Lights</td>
+                                <td><input type="text" class="form-control diagnosis-field" name="lights_damage" placeholder="Enter diagnosis" value="{% if editing %}{{ damage_report.lights_damage }}{% endif %}"></td>
+                            </tr>
+                            <tr>
+                                <td class="component">Oil</td>
+                                <td><input type="text" class="form-control diagnosis-field" name="oil_damage" placeholder="Enter diagnosis" value="{% if editing %}{{ damage_report.oil_damage }}{% endif %}"></td>
+                            </tr>
+                            <tr>
+                                <td class="component">Water</td>
+                                <td><input type="text" class="form-control diagnosis-field" name="water_damage" placeholder="Enter diagnosis" value="{% if editing %}{{ damage_report.water_damage }}{% endif %}"></td>
+                            </tr>
+                            <tr>
+                                <td class="component">Brake</td>
+                                <td><input type="text" class="form-control diagnosis-field" name="brakes_damage" placeholder="Enter diagnosis" value="{% if editing %}{{ damage_report.brakes_damage }}{% endif %}"></td>
+                            </tr>
+                            <tr>
+                                <td class="component">Air</td>
+                                <td><input type="text" class="form-control diagnosis-field" name="air_damage" placeholder="Enter diagnosis" value="{% if editing %}{{ damage_report.air_damage }}{% endif %}"></td>
+                            </tr>
+                            <tr>
+                                <td class="component">Gas</td>
+                                <td><input type="text" class="form-control diagnosis-field" name="gas_damage" placeholder="Enter diagnosis" value="{% if editing %}{{ damage_report.gas_damage }}{% endif %}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-dark page-button" onclick="showBasicInfo()">Back</button>
+            <div>
+                <button type="button" class="btn btn-save" onclick="saveDamageAssessmentAndExit()">Save & Exit</button>
+                <button type="button" class="btn btn-blue page-button" onclick="showMaintenanceDiagnosis()">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maintenance Diagnosis (Step 3) -->
+    <div id="maintenanceDiagnosisForm" class="hidden flex-column justify-content-around" style="height: 100%;">
+        <div class="row">
+            <h3 class="fw-bold">
+                3 Maintenance Diagnosis
+                {% if editing %}
+                <span class="edit-mode-badge">Editing Report #{{ damage_report.report_id }}</span>
+                {% endif %}
+            </h3>
+            <p id="vehicleDetailsPost">{% if editing %}{{ damage_report.vehicle }}{% else %}Select a vehicle in step 1{% endif %}</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-6 mx-auto">
+                <div class="form-container" style="max-width: 100%;">
+                    <div class="mb-3">
+                        <label for="maintenance_diagnosis" class="form-label fw-bold">Maintenance Diagnosis</label>
+                        <input type="text" class="form-control" id="maintenance_diagnosis" name="maintenance_diagnosis" placeholder="Enter diagnosis" value="{% if editing %}{{ damage_report.maintenance_diagnosis }}{% endif %}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="estimate_repair_time" class="form-label fw-bold">Estimated Time of Repair</label>
+                        <input type="text" class="form-control" id="estimate_repair_time" name="estimate_repair_time" placeholder="Enter estimated repair time" value="{% if editing %}{{ damage_report.estimate_repair_time }}{% endif %}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="concerns" class="form-label fw-bold">Concerns</label>
+                        <input type="text" class="form-control" id="concerns" name="concerns" placeholder="Enter concerns here" value="{% if editing %}{{ damage_report.concerns }}{% endif %}">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-dark page-button" onclick="showDamageAssessment()">Back</button>
+            <div>
+                <button type="button" class="btn btn-save" onclick="saveMaintenanceDiagnosisAndExit()">Save & Exit</button>
+                <button type="button" class="btn btn-blue page-button" onclick="submitForm()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update vehicle details when a vehicle is selected
+    document.addEventListener('DOMContentLoaded', function() {
+        const vehicleSelect = document.querySelector('select[name="vehicle"]');
+        vehicleSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const vehicleText = selectedOption.text;
+            document.getElementById('vehicleDetails').textContent = vehicleText;
+            document.getElementById('vehicleDetailsPost').textContent = vehicleText;
+        });
+        
+        // Show the correct form section when editing
+        {% if editing %}
+            // First, hide all sections
+            document.getElementById("basicInfoForm").classList.add("hidden");
+            document.getElementById("basicInfoForm").classList.remove("d-flex");
+            document.getElementById("damageAssessmentForm").classList.add("hidden");
+            document.getElementById("damageAssessmentForm").classList.remove("d-flex");
+            document.getElementById("maintenanceDiagnosisForm").classList.add("hidden");
+            document.getElementById("maintenanceDiagnosisForm").classList.remove("d-flex");
+            
+            // Then, show only the appropriate section based on server-determined initial section
+            {% if initial_section == 'maintenance' %}
+                showMaintenanceDiagnosis();
+            {% elif initial_section == 'damage' %}
+                showDamageAssessment();
+            {% else %}
+                showBasicInfo();
+            {% endif %}
+        {% endif %}
+    });
+
+    function showBasicInfo() {
+        document.getElementById("basicInfoForm").classList.remove("hidden");
+        document.getElementById("basicInfoForm").classList.add("d-flex");
+
+        document.getElementById("damageAssessmentForm").classList.add("hidden");
+        document.getElementById("damageAssessmentForm").classList.remove("d-flex");
+
+        document.getElementById("maintenanceDiagnosisForm").classList.add("hidden");
+        document.getElementById("maintenanceDiagnosisForm").classList.remove("d-flex");
+    }
+
+    function showDamageAssessment() {
+        // Validate vehicle selection before proceeding
+        const vehicleSelect = document.querySelector('select[name="vehicle"]');
+        const dateInput = document.querySelector('input[name="inspection_date"]');
+        
+        if (vehicleSelect.value === "") {
+            alert("Please select a vehicle before proceeding.");
+            return;
+        }
+        
+        if (dateInput.value === "") {
+            alert("Please select an inspection date before proceeding.");
+            return;
+        }
+        
+        document.getElementById("basicInfoForm").classList.add("hidden");
+        document.getElementById("basicInfoForm").classList.remove("d-flex");
+
+        document.getElementById("damageAssessmentForm").classList.remove("hidden");
+        document.getElementById("damageAssessmentForm").classList.add("d-flex");
+
+        document.getElementById("maintenanceDiagnosisForm").classList.add("hidden");
+        document.getElementById("maintenanceDiagnosisForm").classList.remove("d-flex");
+    }
+
+    function showMaintenanceDiagnosis() {
+        document.getElementById("basicInfoForm").classList.add("hidden");
+        document.getElementById("basicInfoForm").classList.remove("d-flex");
+        
+        document.getElementById("damageAssessmentForm").classList.add("hidden");
+        document.getElementById("damageAssessmentForm").classList.remove("d-flex");
+
+        document.getElementById("maintenanceDiagnosisForm").classList.remove("hidden");
+        document.getElementById("maintenanceDiagnosisForm").classList.add("d-flex");
+    }
+    
+    function saveAndExit() {
+        document.getElementById('form_action').value = 'save_exit';
+        const form = document.getElementById('basicInfoFormElement');
+        form.submit();
+    }
+    
+    function saveDamageAssessmentAndExit() {
+        document.getElementById('form_action').value = 'save_exit';
+        
+        // Collect data from all steps
+        const form = document.getElementById('basicInfoFormElement');
+        
+        // Collect damage assessment data
+        const damageElements = document.querySelectorAll('[name$="_damage"]');
+        damageElements.forEach(element => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = element.name;
+            input.value = element.value;
+            form.appendChild(input);
+        });
+        
+        // Submit the form
+        form.submit();
+    }
+    
+    function saveMaintenanceDiagnosisAndExit() {
+        document.getElementById('form_action').value = 'save_exit';
+        
+        // Collect data from all steps
+        const form = document.getElementById('basicInfoFormElement');
+        
+        // Collect damage assessment data
+        const damageElements = document.querySelectorAll('[name$="_damage"]');
+        damageElements.forEach(element => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = element.name;
+            input.value = element.value;
+            form.appendChild(input);
+        });
+        
+        // Collect maintenance diagnosis data
+        const maintenanceDiagnosis = document.getElementById('maintenance_diagnosis');
+        const estimateRepairTime = document.getElementById('estimate_repair_time');
+        const concerns = document.getElementById('concerns');
+        
+        const diagnosisInput = document.createElement('input');
+        diagnosisInput.type = 'hidden';
+        diagnosisInput.name = 'maintenance_diagnosis';
+        diagnosisInput.value = maintenanceDiagnosis.value;
+        form.appendChild(diagnosisInput);
+        
+        const timeInput = document.createElement('input');
+        timeInput.type = 'hidden';
+        timeInput.name = 'estimate_repair_time';
+        timeInput.value = estimateRepairTime.value;
+        form.appendChild(timeInput);
+        
+        const concernsInput = document.createElement('input');
+        concernsInput.type = 'hidden';
+        concernsInput.name = 'concerns';
+        concernsInput.value = concerns.value;
+        form.appendChild(concernsInput);
+        
+        // Submit the form
+        form.submit();
+    }
+    
+    function submitForm() {
+        // Set the form action to submit
+        document.getElementById('form_action').value = 'submit';
+        
+        // Add a hidden field to indicate we want to redirect to dashboard after submission
+        const redirectInput = document.createElement('input');
+        redirectInput.type = 'hidden';
+        redirectInput.name = 'redirect_to_dashboard';
+        redirectInput.value = 'true';
+        
+        // Collect data from all steps
+        const form = document.getElementById('basicInfoFormElement');
+        form.appendChild(redirectInput);
+        
+        // Collect damage assessment data
+        const damageElements = document.querySelectorAll('[name$="_damage"]');
+        damageElements.forEach(element => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = element.name;
+            input.value = element.value;
+            form.appendChild(input);
+        });
+        
+        // Collect maintenance diagnosis data
+        const maintenanceDiagnosis = document.getElementById('maintenance_diagnosis');
+        const estimateRepairTime = document.getElementById('estimate_repair_time');
+        const concerns = document.getElementById('concerns');
+        
+        const diagnosisInput = document.createElement('input');
+        diagnosisInput.type = 'hidden';
+        diagnosisInput.name = 'maintenance_diagnosis';
+        diagnosisInput.value = maintenanceDiagnosis.value;
+        form.appendChild(diagnosisInput);
+        
+        const timeInput = document.createElement('input');
+        timeInput.type = 'hidden';
+        timeInput.name = 'estimate_repair_time';
+        timeInput.value = estimateRepairTime.value;
+        form.appendChild(timeInput);
+        
+        const concernsInput = document.createElement('input');
+        concernsInput.type = 'hidden';
+        concernsInput.name = 'concerns';
+        concernsInput.value = concerns.value;
+        form.appendChild(concernsInput);
+        
+        // Submit the form
+        form.submit();
+    }
+</script>
+{% endblock %}

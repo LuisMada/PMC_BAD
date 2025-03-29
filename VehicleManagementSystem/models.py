@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
+import datetime
 
 class Vehicle(models.Model):
     STATUS_CHOICES = (
@@ -185,3 +186,51 @@ class VehicleInspection(models.Model):
             self.completion_status = 'Pre-Delivery Only'
         else:
             self.completion_status = 'Draft'
+
+# Add to models.py
+
+class DamageReport(models.Model):
+    damage_id = models.AutoField(primary_key=True)
+    report_id = models.CharField(max_length=20, unique=True)
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='damage_reports')
+    inspector = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='damage_inspections')
+    inspection_date = models.DateField()
+    
+    # Component damage descriptions
+    battery_damage = models.TextField(null=True, blank=True)
+    lights_damage = models.TextField(null=True, blank=True)
+    oil_damage = models.TextField(null=True, blank=True)
+    water_damage = models.TextField(null=True, blank=True)
+    brakes_damage = models.TextField(null=True, blank=True)
+    air_damage = models.TextField(null=True, blank=True)
+    gas_damage = models.TextField(null=True, blank=True)
+    
+    # Maintenance information
+    maintenance_diagnosis = models.TextField(null=True, blank=True)
+    estimate_repair_time = models.CharField(max_length=50, default="0")
+    concerns = models.TextField(null=True, blank=True)
+    
+    # Status tracking
+    is_submitted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Damage Report #{self.damage_id} - {self.vehicle}"
+    
+    def save(self, *args, **kwargs):
+        # Generate a report ID if not already assigned
+        if not self.report_id:
+            # Format: DR-YYYYMMDD-XXXX where XXXX is a sequential number
+            today = datetime.date.today().strftime('%Y%m%d')
+            last_report = DamageReport.objects.filter(report_id__startswith=f'DR-{today}').order_by('report_id').last()
+            
+            if last_report:
+                # Extract the last sequence number and increment
+                last_seq = int(last_report.report_id.split('-')[-1])
+                self.report_id = f'DR-{today}-{last_seq + 1:04d}'
+            else:
+                # First report of the day
+                self.report_id = f'DR-{today}-0001'
+                
+        super().save(*args, **kwargs)
