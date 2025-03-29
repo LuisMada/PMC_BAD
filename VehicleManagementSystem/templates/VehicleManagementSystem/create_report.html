@@ -343,11 +343,31 @@
     }
 
     function showPostDelivery() {
+        // Copy pre-delivery inspection values to post-delivery inspection fields
+        copyPreToPostValues();
+        
         document.getElementById("preDeliveryForm").classList.add("hidden");
         document.getElementById("preDeliveryForm").classList.remove("d-flex");
 
         document.getElementById("postDeliveryForm").classList.remove("hidden");
         document.getElementById("postDeliveryForm").classList.add("d-flex");
+    }
+
+    function copyPreToPostValues() {
+        // Get all pre-delivery select elements
+        const preComponents = [
+            'battery', 'lights', 'oil', 'water', 'brakes', 'air', 'gas'
+        ];
+        
+        // Copy values from pre to post
+        preComponents.forEach(component => {
+            const preSelect = document.querySelector(`select[name="pre_${component}"]`);
+            const postSelect = document.querySelector(`select[name="post_${component}"]`);
+            
+            if (preSelect && postSelect) {
+                postSelect.value = preSelect.value;
+            }
+        });
     }
 
     function showTripForm() {
@@ -360,13 +380,13 @@
         document.getElementById("postDeliveryForm").classList.add("hidden");
         document.getElementById("postDeliveryForm").classList.remove("d-flex");
     }
-    
+
     function saveAndExit() {
         document.getElementById('form_action').value = 'save_exit';
         const form = document.getElementById('tripFormElement');
         form.submit();
     }
-    
+
     function savePreDeliveryAndExit() {
         document.getElementById('form_action').value = 'save_exit';
         
@@ -386,7 +406,7 @@
         // Submit the form
         form.submit();
     }
-    
+
     function savePostDeliveryAndExit() {
         document.getElementById('form_action').value = 'save_exit';
         
@@ -416,7 +436,7 @@
         // Submit the form
         form.submit();
     }
-    
+
     function submitForm() {
         // Set the form action to submit
         document.getElementById('form_action').value = 'submit';

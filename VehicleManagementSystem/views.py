@@ -1200,11 +1200,11 @@ def generate_damage_report_pdf(request, report_id):
     ]))
     elements.append(diagnosis_content_table)
     
-    # Estimated Time of Repair
-    time_repair_data = [["Estimated Time of Repair"], [damage_report.estimate_repair_time or "0"]]
-    time_repair_table = Table(time_repair_data, colWidths=[6.5*inch])
+    # Modified: Estimated Time of Repair with two columns
+    time_repair_data = [["Estimated Time of Repair", damage_report.estimate_repair_time or "0"]]
+    time_repair_table = Table(time_repair_data, colWidths=[3.25*inch, 3.25*inch])
     time_repair_table.setStyle(TableStyle([
-        ('GRID', (0, 0), (0, -1), 1, colors.black),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
     ]))
     elements.append(time_repair_table)
