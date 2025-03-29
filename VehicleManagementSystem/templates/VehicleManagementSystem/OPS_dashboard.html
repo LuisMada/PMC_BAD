@@ -18,17 +18,6 @@
         .card-img-top {
             border-radius: 0;
         }
-        .vehicle-image {
-            height: 180px;
-            object-fit: cover;
-            width: 100%;
-        }
-        .vehicle-card {
-            transition: transform 0.2s;
-        }
-        .vehicle-card:hover {
-            transform: translateY(-5px);
-        }
         .filter-section {
             background-color: #f8f9fa;
             padding: 15px;
@@ -88,43 +77,42 @@
             </div>
 
             <!-- Vehicle Availability Section -->
-            <div class="mt-3 vehicle-availability">
+            <div class="mt-3">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 class="fw-bold">Vehicle Availability</h3>
                 </div>
-                <div class="vehicles">
-                    <div class="row mt-3">
-                        {% for vehicle in vehicles %}
-                            <div class="col-md-4 mb-4">
-                                <div class="card shadow vehicle-card">
-                                    <div class="card-header bg-dark text-white d-flex flex-column">
-                                        <span style="font-size: 11px; font-weight: 500;">Plate Number</span>
-                                        <span class="fw-bold" style="font-size: 32px;">{{ vehicle.plate_number }}</span>
-                                        <span class="badge {% if vehicle.status == 'Operational' %} bg-success {% elif vehicle.status == 'In Repair' %} bg-warning {% else %} bg-danger {% endif %}">
-                                            {{ vehicle.status }}
-                                        </span>
+
+                <div class="row">
+                    {% for vehicle in vehicles %}
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center
+                                    {% if vehicle.status == 'Operational' %} bg-success text-white
+                                    {% elif vehicle.status == 'In Repair' %} bg-warning text-dark
+                                    {% else %} bg-danger text-white {% endif %}">
+                                    <span class="fw-bold">{{ vehicle.plate_number }}</span>
+                                    <span>{{ vehicle.status }}</span>
+                                </div>
+                                {% if vehicle.photo %}
+                                    <img src="{{ vehicle.photo.url }}" class="card-img-top" alt="{{ vehicle.vehicle_make }} {{ vehicle.vehicle_model }}" style="height: 180px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                                        <i class="bi bi-car-front text-secondary" style="font-size: 3rem;"></i>
                                     </div>
-                                    {% if vehicle.photo %}
-                                        <img src="{{ vehicle.photo.url }}" class="vehicle-image" alt="{{ vehicle.vehicle_make }} {{ vehicle.vehicle_model }}">
-                                    {% else %}
-                                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
-                                            <i class="bi bi-car-front text-secondary" style="font-size: 3rem;"></i>
-                                        </div>
-                                    {% endif %}
-                                    <div class="card-body">
-                                        <h5 class="mb-3">{{ vehicle.vehicle_make }} - {{ vehicle.vehicle_model }} {% if vehicle.year %}({{ vehicle.year }}){% endif %}</h5>
-                                        <div class="mt-2"><strong>Date of Last Maintenance:</strong> {% if vehicle.last_maintenance %}{{ vehicle.last_maintenance|date:"M d, Y" }}{% else %}Not recorded{% endif %}</div>
-                                    </div>
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ vehicle.vehicle_make }} - {{ vehicle.vehicle_model }}{% if vehicle.year %} ({{ vehicle.year }}){% endif %}</h5>
+                                    <p class="card-text"><strong>Last Maintenance:</strong> {% if vehicle.last_maintenance %}{{ vehicle.last_maintenance|date:"M d, Y" }}{% else %}No Records{% endif %}</p>
                                 </div>
                             </div>
-                        {% empty %}
-                            <div class="col-12">
-                                <div class="alert alert-info">
-                                    No vehicles available with the current filter settings.
-                                </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                No vehicles available with the current filter settings.
                             </div>
-                        {% endfor %}
-                    </div>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>

@@ -109,7 +109,11 @@
                             <select class="form-control" name="vehicle" required {% if editing %}disabled{% endif %}>
                                 <option value="">Select Vehicle</option>
                                 {% for vehicle in vehicles %}
-                                    <option value="{{ vehicle.vehicle_id }}" {% if editing and inspection.vehicle.vehicle_id == vehicle.vehicle_id %}selected{% endif %}>{{ vehicle }}</option>
+                                    <option value="{{ vehicle.vehicle_id }}" 
+                                        {% if editing and inspection.vehicle.vehicle_id == vehicle.vehicle_id %}selected{% endif %}
+                                        {% if preselected_vehicle and preselected_vehicle.vehicle_id == vehicle.vehicle_id %}selected{% endif %}>
+                                        {{ vehicle }}
+                                    </option>
                                 {% endfor %}
                             </select>
                             {% if editing %}
@@ -117,7 +121,7 @@
                             <input type="hidden" name="report_id" value="{{ inspection.report_id }}">
                             {% endif %}
                             <input type="text" class="form-control mt-2" name="driver_name" placeholder="Assigned Driver" value="{% if editing %}{{ inspection.driver_name }}{% endif %}">
-                            <input type="date" class="form-control mt-2" name="inspection_date" required value="{% if editing %}{{ inspection.inspection_date|date:'Y-m-d' }}{% endif %}">
+                            <input type="date" class="form-control mt-2" name="inspection_date" required value="{% if editing %}{{ inspection.inspection_date|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}">
                         </div>
                         <input type="hidden" name="action" id="form_action" value="submit">
                     </form>
@@ -126,7 +130,7 @@
         </div>
         <div class="row">
             <div class="d-flex justify-content-between mt-4">
-                <a href="{% url 'view_reports' %}" class="btn btn-dark page-button">Cancel</a>
+                <a href="{% url 'WH_dashboard' %}" class="btn btn-dark page-button">Cancel</a>
                 <div>
                     <button type="button" class="btn btn-save" onclick="saveAndExit()">Save & Exit</button>
                     <button type="button" class="btn btn-blue" onclick="showPreDelivery()">Next</button>
@@ -273,15 +277,24 @@
 </div>
 
 <script>
-    // Update vehicle details when a vehicle is selected
     document.addEventListener('DOMContentLoaded', function() {
         const vehicleSelect = document.querySelector('select[name="vehicle"]');
-        vehicleSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
+        
+        // Update vehicle details function
+        function updateVehicleDetails() {
+            const selectedOption = vehicleSelect.options[vehicleSelect.selectedIndex];
             const vehicleText = selectedOption.text;
             document.getElementById('vehicleDetails').textContent = vehicleText;
             document.getElementById('vehicleDetailsPost').textContent = vehicleText;
-        });
+        }
+        
+        // Add change event listener
+        vehicleSelect.addEventListener('change', updateVehicleDetails);
+        
+        // Run once on page load to update details for preselected vehicle
+        if (vehicleSelect.value !== "") {
+            updateVehicleDetails();
+        }
         
         // Show the correct form section when editing
         {% if editing %}

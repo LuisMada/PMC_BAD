@@ -128,6 +128,51 @@ def create_report(request):
     
     # Check if we're editing an existing report
     report_id = request.GET.get('report_id')
+    preselected_vehicle_id = request.GET.get('vehicle_id')
+    preselected_vehicle = None
+    
+    if report_id:
+        try:
+            inspection = VehicleInspection.objects.get(report_id=report_id)
+            
+            # Don't allow editing submitted reports
+            if inspection.is_submitted:
+                messages.error(request, "This report has already been submitted and cannot be edited.")
+                return redirect("view_reports")
+                
+            if inspection.inspector != request.user:
+                messages.error(request, "You don't have permission to edit this report.")
+                return redirect("view_reports")
+            
+            context = {
+                'vehicles': vehicles,
+                'inspection': inspection,
+                'editing': True
+            }
+        except VehicleInspection.DoesNotExist:
+            messages.error(request, "Report not found.")
+            return redirect("view_reports")
+    else:
+        # Check if a vehicle ID was provided (from dashboard)
+        if preselected_vehicle_id:
+            try:
+                preselected_vehicle = Vehicle.objects.get(vehicle_id=preselected_vehicle_id)
+                # Check if the vehicle is operational
+                if preselected_vehicle.status != 'Operational':
+                    messages.warning(request, f"Vehicle {preselected_vehicle} is {preselected_vehicle.status} and may not be suitable for a new inspection.")
+            except Vehicle.DoesNotExist:
+                messages.error(request, "Selected vehicle not found.")
+        
+        context = {
+            'vehicles': vehicles,
+            'preselected_vehicle': preselected_vehicle,
+            'today': datetime.date.today().strftime('%Y-%m-%d')  # Add today's date as default
+        }
+    
+    return render(request, "VehicleManagementSystem/create_report.html", context)
+    
+    # Check if we're editing an existing report
+    report_id = request.GET.get('report_id')
     if report_id:
         try:
             inspection = VehicleInspection.objects.get(report_id=report_id)
