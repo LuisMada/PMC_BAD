@@ -444,6 +444,9 @@ def edit_vehicle(request, plate_number):
     vehicle = get_object_or_404(Vehicle, plate_number=plate_number)
     damages = vehicle.damages.all().order_by('-date_reported')
     
+    # Get damage reports associated with this vehicle
+    damage_reports = DamageReport.objects.filter(vehicle=vehicle).order_by('-created_at')
+    
     if request.method == "POST":
         form = VehicleForm(request.POST, request.FILES, instance=vehicle)
         if form.is_valid():
@@ -459,7 +462,8 @@ def edit_vehicle(request, plate_number):
         "form": form,
         "vehicle": vehicle,
         "damages": damages,
-        "damage_form": damage_form
+        "damage_form": damage_form,
+        "damage_reports": damage_reports  # Add damage reports to the context
     }
     
     return render(request, "VehicleManagementSystem/edit_vehicle.html", context)
@@ -1002,7 +1006,7 @@ def delete_damage_report(request, report_id):
 
 @login_required
 def generate_damage_report_pdf(request, report_id):
-    """View to generate a PDF of the damage report"""
+    """View to generate a PDF of the damage report matching the template"""
     # Get the damage report
     damage_report = get_object_or_404(DamageReport, report_id=report_id)
     
@@ -1011,109 +1015,172 @@ def generate_damage_report_pdf(request, report_id):
     response['Content-Disposition'] = f'attachment; filename="damage_report_{damage_report.report_id}.pdf"'
     
     # Create the PDF document
-    doc = SimpleDocTemplate(response, pagesize=letter)
+    doc = SimpleDocTemplate(response, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
     
     # Get styles
     styles = getSampleStyleSheet()
     title_style = styles['Heading1']
+    title_style.alignment = 1  # Center alignment
     subtitle_style = styles['Heading2']
+    subtitle_style.alignment = 1  # Center alignment
     normal_style = styles['Normal']
     
-    # Add title
-    elements.append(Paragraph("Vehicle Damage Report", title_style))
+    # Create company heading
+    logo_text = Paragraph("PETROZONE MARKETING CORPORATION", title_style)
+    elements.append(logo_text)
+    subtitle = Paragraph("Vehicle Management System", subtitle_style)
+    elements.append(subtitle)
     elements.append(Spacer(1, 0.25*inch))
     
-    # Add logo placeholder (in a real implementation, you'd insert the company logo)
-    elements.append(Paragraph("PETROZONE MARKETING CORPORATION", subtitle_style))
-    elements.append(Paragraph("Vehicle Management System", normal_style))
-    elements.append(Spacer(1, 0.25*inch))
+    # Create the damage report title with a blue background
+    report_title_data = [["VEHICLE DAMAGE REPORT"]]
+    report_title_table = Table(report_title_data, colWidths=[6.5*inch])
+    report_title_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, 0), colors.Color(0.2, 0.3, 0.7)),  # Dark blue
+        ('TEXTCOLOR', (0, 0), (0, 0), colors.white),
+        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (0, 0), 14),
+        ('PADDING', (0, 0), (0, 0), 6),
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+    ]))
+    elements.append(report_title_table)
     
-    # Add basic information
-    elements.append(Paragraph("General Information", subtitle_style))
-    
-    # Basic Information Table
-    basic_info = [
+    # Date information table
+    date_info_data = [
         ["Date of Report", "Date of Last Inspection"],
-        [damage_report.created_at.strftime("%Y-%m-%d"), damage_report.inspection_date.strftime("%Y-%m-%d")],
+        [damage_report.created_at.strftime("%Y-%m-%d"), damage_report.inspection_date.strftime("%Y-%m-%d")]
+    ]
+    date_info_table = Table(date_info_data, colWidths=[3.25*inch, 3.25*inch])
+    date_info_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.9, 0.9, 0.9)),  # Light gray
+    ]))
+    elements.append(date_info_table)
+    
+    # General Information header
+    general_info_header = [["General Information"]]
+    general_header_table = Table(general_info_header, colWidths=[6.5*inch])
+    general_header_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 0), (0, 0), colors.Color(0.9, 0.9, 0.9)),  # Light gray
+    ]))
+    elements.append(general_header_table)
+    
+    # General information data
+    general_info_data = [
         ["Name", "ID Number"],
         [damage_report.inspector.name, damage_report.inspector.employee_id],
         ["Vehicle Plate Number", "Vehicle Model (Make)"],
         [damage_report.vehicle.plate_number, f"{damage_report.vehicle.vehicle_make} - {damage_report.vehicle.vehicle_model}"]
     ]
-    
-    # Create basic info table
-    info_table = Table(basic_info, colWidths=[3*inch, 3*inch])
-    info_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (1, 0), colors.blue),
-        ('BACKGROUND', (0, 2), (1, 2), colors.blue),
-        ('BACKGROUND', (0, 4), (1, 4), colors.blue),
-        ('TEXTCOLOR', (0, 0), (1, 0), colors.white),
-        ('TEXTCOLOR', (0, 2), (1, 2), colors.white),
-        ('TEXTCOLOR', (0, 4), (1, 4), colors.white),
+    general_info_table = Table(general_info_data, colWidths=[3.25*inch, 3.25*inch])
+    general_info_table.setStyle(TableStyle([
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('PADDING', (0, 0), (-1, -1), 6),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 2), (-1, 2), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.9, 0.9, 0.9)),
+        ('BACKGROUND', (0, 2), (-1, 2), colors.Color(0.9, 0.9, 0.9)),
     ]))
-    elements.append(info_table)
-    elements.append(Spacer(1, 0.25*inch))
+    elements.append(general_info_table)
     
-    # Component Damage Assessment
-    elements.append(Paragraph("Component Damage Assessment", subtitle_style))
+    # Maintenance Information header
+    maintenance_header = [["MAINTENANCE INFORMATION"]]
+    maintenance_header_table = Table(maintenance_header, colWidths=[6.5*inch])
+    maintenance_header_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+    ]))
+    elements.append(maintenance_header_table)
     
+    # Accumulated Damages header
+    accumulated_damages_header = [["Accumulated Damages"]]
+    accumulated_header_table = Table(accumulated_damages_header, colWidths=[6.5*inch])
+    accumulated_header_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 0), (0, 0), colors.Color(0.9, 0.9, 0.9)),
+    ]))
+    elements.append(accumulated_header_table)
+    
+    # Component damage table headers
+    component_header = [["Vehicle Component/Section", "Description"]]
+    component_header_table = Table(component_header, colWidths=[3.25*inch, 3.25*inch])
+    component_header_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, 0), 1, colors.black),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ]))
+    elements.append(component_header_table)
+    
+    # Component damages data - include all components
     component_data = [
-        ["Component", "Damage Description"],
-        ["Battery", damage_report.battery_damage or "No damage reported"],
-        ["Lights", damage_report.lights_damage or "No damage reported"],
-        ["Oil", damage_report.oil_damage or "No damage reported"],
-        ["Water", damage_report.water_damage or "No damage reported"],
-        ["Brakes", damage_report.brakes_damage or "No damage reported"],
-        ["Air", damage_report.air_damage or "No damage reported"],
-        ["Gas", damage_report.gas_damage or "No damage reported"],
+        ['Battery', damage_report.battery_damage or "No damage reported"],
+        ['Lights', damage_report.lights_damage or "No damage reported"],
+        ['Oil', damage_report.oil_damage or "No damage reported"],
+        ['Water', damage_report.water_damage or "No damage reported"],
+        ['Brakes', damage_report.brakes_damage or "No damage reported"],
+        ['Air', damage_report.air_damage or "No damage reported"],
+        ['Gas', damage_report.gas_damage or "No damage reported"]
     ]
     
-    component_table = Table(component_data, colWidths=[1.5*inch, 4.5*inch])
+    # Add minimum height to make the damages section taller
+    component_table = Table(component_data, colWidths=[3.25*inch, 3.25*inch], rowHeights=[0.4*inch] * len(component_data))
     component_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (1, 0), colors.blue),
-        ('TEXTCOLOR', (0, 0), (1, 0), colors.white),
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('PADDING', (0, 0), (-1, -1), 6),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     elements.append(component_table)
-    elements.append(Spacer(1, 0.25*inch))
     
-    # Maintenance Information
-    elements.append(Paragraph("Maintenance Information", subtitle_style))
-    
-    maintenance_data = [
-        ["Maintenance Diagnosis", damage_report.maintenance_diagnosis or "No diagnosis provided"],
-        ["Estimated Time of Repair", damage_report.estimate_repair_time or "0"],
-        ["Concerns", damage_report.concerns or "No concerns noted"]
-    ]
-    
-    maintenance_table = Table(maintenance_data, colWidths=[2*inch, 4*inch])
-    maintenance_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('PADDING', (0, 0), (-1, -1), 6),
+    # Maintenance Diagnosis header
+    diagnosis_header = [["Maintenance Diagnosis"]]
+    diagnosis_header_table = Table(diagnosis_header, colWidths=[6.5*inch])
+    diagnosis_header_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
     ]))
-    elements.append(maintenance_table)
+    elements.append(diagnosis_header_table)
     
-    # Add signature lines
-    elements.append(Spacer(1, inch))
-    
-    signature_data = [
-        ["Inspector Signature", "Maintenance Personnel Signature"],
-        ["____________________", "____________________"],
-        [f"Name: {damage_report.inspector.name}", "Name: ________________"],
-    ]
-    
-    sig_table = Table(signature_data, colWidths=[3*inch, 3*inch])
-    sig_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('PADDING', (0, 0), (-1, -1), 6),
+    # Maintenance Diagnosis content
+    diagnosis_content = [[damage_report.maintenance_diagnosis or "No diagnosis provided"]]
+    diagnosis_content_table = Table(diagnosis_content, colWidths=[6.5*inch], rowHeights=[1.5*inch])
+    diagnosis_content_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+        ('VALIGN', (0, 0), (0, 0), 'TOP'),
     ]))
-    elements.append(sig_table)
+    elements.append(diagnosis_content_table)
+    
+    # Estimated Time of Repair
+    time_repair_data = [["Estimated Time of Repair"], [damage_report.estimate_repair_time or "0"]]
+    time_repair_table = Table(time_repair_data, colWidths=[6.5*inch])
+    time_repair_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, -1), 1, colors.black),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+    ]))
+    elements.append(time_repair_table)
+    
+    # Concerns
+    concerns_header = [["Concerns"]]
+    concerns_header_table = Table(concerns_header, colWidths=[6.5*inch])
+    concerns_header_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+    ]))
+    elements.append(concerns_header_table)
+    
+    # Concerns content
+    concerns_content = [[damage_report.concerns or "No concerns noted"]]
+    concerns_content_table = Table(concerns_content, colWidths=[6.5*inch], rowHeights=[1.5*inch])
+    concerns_content_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (0, 0), 1, colors.black),
+        ('VALIGN', (0, 0), (0, 0), 'TOP'),
+    ]))
+    elements.append(concerns_content_table)
     
     # Build PDF document
     doc.build(elements)

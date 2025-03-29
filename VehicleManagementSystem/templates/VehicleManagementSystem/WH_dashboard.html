@@ -130,8 +130,8 @@
                             {% endif %}
                             <div class="card-body">
                                 <h5 class="card-title">{{ vehicle.vehicle_make }} - {{ vehicle.vehicle_model }}</h5>
-                                {% if vehicle.year %}<p class="card-text">Year: {{ vehicle.year }}</p>{% endif %}
-                                {% if vehicle.last_maintenance %}<p class="card-text">Last Maintenance: {{ vehicle.last_maintenance|date:"M d, Y" }}</p>{% endif %}
+                                <!-- {% if vehicle.year %}<p class="card-text">Year: {{ vehicle.year }}</p>{% endif %} -->
+                                {% if vehicle.last_maintenance %}<p class="card-text">Last Damage Report: {{ vehicle.last_maintenance|date:"M d, Y" }}</p>{% endif %}
                             </div>
                         </div>
                     </div>

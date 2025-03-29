@@ -232,5 +232,13 @@ class DamageReport(models.Model):
             else:
                 # First report of the day
                 self.report_id = f'DR-{today}-0001'
-                
+        
+        # First save this damage report
         super().save(*args, **kwargs)
+        
+        # After saving, update the vehicle's last_maintenance date
+        # Only update if this report is submitted (not a draft)
+        if self.is_submitted:
+            # Update the vehicle's last_maintenance field with the inspection date
+            self.vehicle.last_maintenance = self.inspection_date
+            self.vehicle.save(update_fields=['last_maintenance'])
