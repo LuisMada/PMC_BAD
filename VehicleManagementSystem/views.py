@@ -1231,3 +1231,29 @@ def generate_damage_report_pdf(request, report_id):
     doc.build(elements)
     
     return response
+
+def forgot_password(request):
+    """View to handle forgotten password requests"""
+    if request.method == "POST":
+        employee_id = request.POST.get("employee_id")
+        
+        if not employee_id:
+            messages.error(request, "Please enter your Employee ID.")
+            return render(request, "VehicleManagementSystem/forgot_password.html")
+        
+        try:
+            # Check if user exists
+            user = CustomUser.objects.get(employee_id=employee_id)
+            
+            # Reset password to default temporary password
+            user.set_password("00000000")
+            user.first_login = True
+            user.save()
+            
+            messages.success(request, "Password has been reset. You can now login with the temporary password: 00000000. You'll be asked to change it on login.")
+            return redirect("login")
+            
+        except CustomUser.DoesNotExist:
+            messages.error(request, "No account found with this Employee ID.")
+    
+    return render(request, "VehicleManagementSystem/forgot_password.html")
