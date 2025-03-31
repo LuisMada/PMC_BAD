@@ -5,7 +5,6 @@ This document provides step-by-step instructions for setting up the Vehicle Mana
 ## Prerequisites
 
 - Python 3.8 or higher
-- PostgreSQL 12 or higher
 - Git (optional, for cloning the repository)
 
 ## Setup Steps
@@ -16,8 +15,7 @@ Ensure your system has the necessary software installed:
 
 ```bash
 # For macOS (using Homebrew)
-brew install python postgresql
-
+brew install python
 ```
 
 ### 2. Clone/Copy the Project
@@ -52,50 +50,22 @@ venv\Scripts\activate
 source venv/bin/activate
 
 # Install Django and other dependencies
-pip install django psycopg2-binary Pillow
+pip install django Pillow reportlab
 ```
 
-### 4. Configure PostgreSQL
+### 4. Configure SQLite Database
 
-Set up the PostgreSQL database:
-
-```bash
-# Connect to PostgreSQL command line
-# For Linux/macOS:
-sudo -u postgres psql
-# For Windows (after adding PostgreSQL bin to PATH):
-psql -U postgres
-```
-
-Execute the following SQL commands:
-
-```sql
--- Create a database user
-CREATE USER pmc_user WITH PASSWORD '12345678';
-
--- Create the database
-CREATE DATABASE pmc_database;
-
--- Grant privileges
-GRANT ALL PRIVILEGES ON DATABASE pmc_database TO pmc_user;
-
--- Exit PostgreSQL
-\q
-```
+The project uses SQLite by default, which doesn't require additional setup. The database file will be created automatically in your project directory.
 
 ### 5. Update Django Settings (if needed)
 
-If your PostgreSQL configuration differs, update the `settings.py` file:
+The `settings.py` file should already be configured to use SQLite:
 
 ```python
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'pmc_database',
-        'USER': 'pmc_user',
-        'PASSWORD': '12345678',
-        'HOST': '127.0.0.1',  # Use 127.0.0.1 instead of 'localhost'
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 ```
@@ -143,32 +113,3 @@ The system supports three user roles:
 - **Warehouse Personnel**: Manage inspection reports
 - **Operations Team**: View vehicles and reports
 - **Vehicle Management Team**: Full access to manage vehicles, users, and reports
-
-## Troubleshooting
-
-### Database Connection Issues
-- Ensure PostgreSQL service is running
-- Verify database credentials in settings.py
-- Check that the database and user exist with proper permissions
-
-### Migration Errors
-- If you encounter migration errors, try:
-  ```bash
-  python manage.py migrate --fake-initial
-  ```
-
-### Static Files Not Loading
-- Run `python manage.py collectstatic`
-- Ensure STATIC_URL and STATIC_ROOT are correctly set in settings.py
-
-## Backup and Restore
-
-### Creating a Database Backup
-```bash
-pg_dump -U pmc_user -d pmc_database > backup.sql
-```
-
-### Restoring from Backup
-```bash
-psql -U pmc_user -d pmc_database < backup.sql
-```
