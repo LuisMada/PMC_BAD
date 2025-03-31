@@ -52,6 +52,31 @@ echo -e "${GREEN}Installing dependencies...${NC}"
 pip install django
 pip install pillow  # For ImageField support
 pip install reportlab  # For PDF generation
+pip install psycopg2-binary  # For PostgreSQL support
+
+# Try to detect if PostgreSQL is installed
+if command -v psql &>/dev/null; then
+    echo -e "${GREEN}PostgreSQL detected. Attempting to set up database...${NC}"
+    
+    # Check if we can connect to PostgreSQL
+    if psql -U postgres -c '\q' 2>/dev/null; then
+        # Try to create database and user automatically
+        echo -e "${GREEN}Creating database and user...${NC}"
+        psql -U postgres -c "CREATE USER pmc_user WITH PASSWORD '12345678';" 2>/dev/null
+        psql -U postgres -c "CREATE DATABASE pmc_database;" 2>/dev/null
+        psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE pmc_database TO pmc_user;" 2>/dev/null
+        
+        echo -e "${GREEN}Database setup complete. If you didn't see any error messages, the setup was successful.${NC}"
+    else
+        echo -e "${YELLOW}Could not connect to PostgreSQL as user 'postgres'. You may need to set up the database manually.${NC}"
+        echo -e "Please run the following commands in PostgreSQL:"
+        echo -e "CREATE USER pmc_user WITH PASSWORD '12345678';"
+        echo -e "CREATE DATABASE pmc_database;"
+        echo -e "GRANT ALL PRIVILEGES ON DATABASE pmc_database TO pmc_user;"
+    fi
+else
+    echo -e "${YELLOW}PostgreSQL not detected. Please install PostgreSQL and set up the database manually.${NC}"
+fi
 
 # Create requirements.txt
 echo -e "${GREEN}Creating requirements.txt...${NC}"
@@ -60,4 +85,10 @@ pip freeze > requirements.txt
 echo -e "${YELLOW}Installation complete!${NC}"
 echo -e "To activate the virtual environment, run: ${GREEN}source $ACTIVATE${NC}"
 echo -e "To deactivate the virtual environment when done, run: ${GREEN}deactivate${NC}"
+
+echo -e "\nNext steps:"
+echo -e "1. Apply migrations: ${GREEN}python manage.py migrate${NC}"
+echo -e "2. Create a superuser: ${GREEN}python manage.py createsuperuser${NC}"
+echo -e "3. Run the server: ${GREEN}python manage.py runserver${NC}"
+
 echo -e "\nRequirements have been saved to requirements.txt"
