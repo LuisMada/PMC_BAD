@@ -30,7 +30,8 @@ class VehicleForm(forms.ModelForm):
             'vehicle_model': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Vehicle Model'}),
             'year': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter Year'}),
             'last_maintenance': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'status': forms.RadioSelect(attrs={'class': 'status-radio'})
+            'status': forms.RadioSelect(attrs={'class': 'status-radio'}),
+            'photo': forms.FileInput(attrs={'class': 'form-control'})  # Make sure this is included
         }
 
 class VehicleDamageForm(forms.ModelForm):

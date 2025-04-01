@@ -10,13 +10,41 @@ from django.http import JsonResponse
 from .models import Vehicle, VehicleDamage, VehicleInspection, CustomUser, DamageReport
 
 from django.core.paginator import Paginator
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
+
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+def test_cloudinary(request):
+    """Test if Cloudinary is configured correctly."""
+    try:
+        # Try to access Cloudinary account info
+        result = cloudinary.api.ping()
+        
+        # If you want to test upload, uncomment this:
+        # test_upload = cloudinary.uploader.upload(
+        #     "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+        #     public_id="test_connection",
+        #     overwrite=True
+        # )
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Cloudinary connection successful',
+            'cloudinary_url': cloudinary.config().cloud_name
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
 
 @login_required
 def view_reports(request):
