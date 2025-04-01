@@ -3,6 +3,7 @@ from django.db import models
 from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 import datetime
+from cloudinary.models import CloudinaryField
 
 class Vehicle(models.Model):
     STATUS_CHOICES = (
@@ -26,7 +27,7 @@ class Vehicle(models.Model):
     vehicle_make = models.CharField(max_length=50)
     vehicle_model = models.CharField(max_length=50)
     year = models.PositiveIntegerField(null=True, blank=True)
-    photo = models.ImageField(upload_to='vehicle_photos/', blank=True, null=True)
+    photo = CloudinaryField('vehicle_photos', folder='vehicle_photos', blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Operational')
     date_added = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
