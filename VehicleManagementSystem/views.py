@@ -22,6 +22,64 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
+def debug_cloudinary(request):
+    """Detailed debugging for Cloudinary configuration."""
+    try:
+        # Check environment variables
+        env_vars = {
+            'CLOUDINARY_CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+            'CLOUDINARY_API_KEY': os.environ.get('CLOUDINARY_API_KEY', '[HIDDEN]'),
+            'CLOUDINARY_API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', '[HIDDEN]')
+        }
+        
+        # Check Cloudinary config
+        cloudinary_config = {
+            'cloud_name': cloudinary.config().cloud_name,
+            'api_key': '[HIDDEN]' if cloudinary.config().api_key else None,
+            'api_secret': '[HIDDEN]' if cloudinary.config().api_secret else None
+        }
+        
+        # Try a test upload
+        try:
+            # Create a simple 1x1 pixel image for testing
+            import base64
+            test_image_data = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVQI12P4//8/AAX+Av7czFnnAAAAAElFTkSuQmCC"
+            test_image = base64.b64decode(test_image_data)
+            
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                test_image,
+                public_id="debug_test",
+                folder="media/test",
+                overwrite=True
+            )
+            
+            # Get URL of the uploaded image
+            image_url = upload_result.get('secure_url')
+        except Exception as upload_error:
+            upload_result = str(upload_error)
+            image_url = None
+        
+        return JsonResponse({
+            'status': 'debug_info', 
+            'env_vars': env_vars,
+            'cloudinary_config': cloudinary_config,
+            'upload_test': {
+                'success': image_url is not None,
+                'url': image_url,
+                'result': upload_result if image_url else str(upload_result)
+            },
+            'media_settings': {
+                'MEDIA_URL': settings.MEDIA_URL,
+                'DEFAULT_FILE_STORAGE': settings.DEFAULT_FILE_STORAGE
+            }
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
 def test_cloudinary(request):
     """Test if Cloudinary is configured correctly."""
     try:

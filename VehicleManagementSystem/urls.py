@@ -3,13 +3,14 @@ from .views import (
     login_view, logout_view, register_view, dashboard, driver_dashboard, management_dashboard, 
     create_report, manage_vehicles, add_vehicle, edit_vehicle, delete_vehicle, add_vehicle_damage,
     change_password, generate_report_pdf, view_reports, delete_report, view_damage_reports, create_damage_report, delete_damage_report, generate_damage_report_pdf,
-    view_accounts, edit_account, delete_account, reset_password, forgot_password, test_cloudinary  # Add test_cloudinary here
+    view_accounts, edit_account, delete_account, reset_password, forgot_password, test_cloudinary, debug_cloudinary  # Add test_cloudinary here
 )
 
 urlpatterns = [
 
     path("test-cloudinary/", test_cloudinary, name="test_cloudinary"),
-    
+    path("debug-cloudinary/", debug_cloudinary, name="debug_cloudinary"),
+
     # Authentication URLs
     path("login/", login_view, name="login"),
     path('', login_view, name='login'),
