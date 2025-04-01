@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-!ynegn!l$&m_6izsqe-dgjz89#fq#=(5=5o&=7g98v_we!ur3j
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['pmc-bad-d1.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['pmc-bad.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
