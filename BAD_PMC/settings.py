@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary',              # Add this line
+    'cloudinary_storage',      # Add this line
     'VehicleManagementSystem',  # Your app
 ]
 
