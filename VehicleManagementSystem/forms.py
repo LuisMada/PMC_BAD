@@ -64,38 +64,19 @@ class VehicleFilterForm(forms.Form):
     )
 
 class UserRegistrationForm(forms.ModelForm):
-    name = forms.CharField(max_length=50, required=True, 
-                         widget=forms.TextInput(attrs={'class': 'form-control'}))
-    email = forms.EmailField(required=True,
-                          widget=forms.EmailInput(attrs={'class': 'form-control'}))
-    role = forms.ChoiceField(choices=CustomUser.ROLE_CHOICES, required=True,
-                           widget=forms.Select(attrs={'class': 'form-select'}))
-    employee_id = forms.CharField(max_length=20, required=True,
-                               widget=forms.TextInput(attrs={'class': 'form-control'}))
-
     class Meta:
         model = CustomUser
         fields = ["employee_id", "name", "email", "role"]
+        widgets = {
+            'employee_id': forms.TextInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'})
+        }
 
     def save(self, commit=True):
-        if self.instance.pk:  # If we're editing an existing instance
-            user = self.instance
-            user.employee_id = self.cleaned_data["employee_id"]
-            user.name = self.cleaned_data["name"]
-            user.email = self.cleaned_data["email"]
-            user.role = self.cleaned_data["role"]
-        else:  # Creating a new user
-            user = CustomUser.objects.create_user(
-                employee_id=self.cleaned_data["employee_id"],
-                name=self.cleaned_data["name"],
-                role=self.cleaned_data["role"],
-                password="00000000"
-            )
-            user.email = self.cleaned_data["email"]
-            
-        if commit:
-            user.save()
-        return user
+        # Just handle the basic form save - the view will take care of password
+        return super().save(commit=commit)
     
 class PasswordChangeForm(forms.Form):
     current_password = forms.CharField(

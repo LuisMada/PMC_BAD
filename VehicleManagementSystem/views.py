@@ -630,7 +630,14 @@ def register_view(request):
     if request.method == "POST":
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            # Create the user without saving yet
+            user = form.save(commit=False)
+            
+            # Explicitly set the password and first_login flag
+            user.set_password("00000000")
+            user.first_login = True
+            user.save()
+            
             messages.success(request, f"Account created successfully for {user.name}! Temporary password: 00000000")
             return redirect("login")
         else:
