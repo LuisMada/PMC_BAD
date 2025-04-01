@@ -92,7 +92,7 @@ WSGI_APPLICATION = 'BAD_PMC.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'pmc_database',
         'USER': 'pmc_user',
         'PASSWORD': '12345678',
