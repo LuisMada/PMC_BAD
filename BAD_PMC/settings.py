@@ -12,12 +12,17 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+import environ
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env()
+# Read .env file from the project root directory
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -26,7 +31,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-!ynegn!l$&m_6izsqe-dgjz89#fq#=(5=5o&=7g98v_we!ur3j'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+# Set DEBUG based on environment
+DEBUG = env('DEBUG', default='True') == 'False'
 
 ALLOWED_HOSTS = ['pmc-bad.onrender.com', 'localhost', '127.0.0.1']
 
@@ -93,25 +99,33 @@ WSGI_APPLICATION = 'BAD_PMC.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'pmc_database',
-        'USER': 'pmc_user',
-        'PASSWORD': '12345678',
-        'HOST': '127.0.0.1',  # Use 127.0.0.1 instead of 'localhost' to avoid IPv6 issues
-        'PORT': '5432',
+if DEBUG:
+    # Use SQLite for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
-
+else:
+    # Use PostgreSQL for production
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('SUPABASE_DB_NAME'),
+            'USER': env('SUPABASE_DB_USER'),
+            'PASSWORD': env('SUPABASE_DB_PASSWORD'),
+            'HOST': env('SUPABASE_DB_HOST'),
+            'PORT': env('SUPABASE_DB_PORT', default='5432'),
+        }
+    }
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET')
+    'CLOUD_NAME': env('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': env('CLOUDINARY_API_KEY'),
+    'API_SECRET': env('CLOUDINARY_API_SECRET')
 }
 
 # Configure Cloudinary
