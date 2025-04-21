@@ -128,8 +128,8 @@
                         </span>
                         
                         <div class="card-body">
-                            <h5 class="card-title">{{ vehicle.vehicle_make }} - {{ vehicle.vehicle_model }} {{ vehicle.year }}</h5>
-                            <h6 class="text-muted">{{ vehicle.plate_number }}</h6>
+                            <h5 class="card-title">{{ vehicle.plate_number }}</h5>
+                            <h6 class="text-muted">{{ vehicle.vehicle_make }} - {{ vehicle.vehicle_model }} {{ vehicle.year }}</h6>
                             <div class="d-grid gap-2 mt-3">
                                 <a href="{% url 'edit_vehicle' vehicle.plate_number %}" class="btn btn-blue">
                                     <i class="bi bi-pencil"></i> Edit

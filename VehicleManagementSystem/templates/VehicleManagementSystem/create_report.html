@@ -109,15 +109,15 @@
                             <select class="form-control" name="vehicle" required {% if editing %}disabled{% endif %}>
                                 <option value="">Select Vehicle</option>
                                 {% for vehicle in vehicles %}
-                                    <option value="{{ vehicle.vehicle_id }}" 
-                                        {% if editing and inspection.vehicle.vehicle_id == vehicle.vehicle_id %}selected{% endif %}
-                                        {% if preselected_vehicle and preselected_vehicle.vehicle_id == vehicle.vehicle_id %}selected{% endif %}>
-                                        {{ vehicle }}
+                                    <option value="{{ vehicle.plate_number }}" 
+                                        {% if editing and inspection.vehicle.plate_number == vehicle.plate_number %}selected{% endif %}
+                                        {% if preselected_vehicle and preselected_vehicle.plate_number == vehicle.plate_number %}selected{% endif %}>
+                                        {{ vehicle.plate_number }} - {{ vehicle.vehicle_make }} {{ vehicle.vehicle_model }}
                                     </option>
                                 {% endfor %}
                             </select>
                             {% if editing %}
-                            <input type="hidden" name="vehicle" value="{{ inspection.vehicle.vehicle_id }}">
+                            <input type="hidden" name="vehicle" value="{{ inspection.vehicle.plate_number }}">
                             <input type="hidden" name="report_id" value="{{ inspection.report_id }}">
                             {% endif %}
                             <input type="text" class="form-control mt-2" name="driver_name" placeholder="Assigned Driver" value="{% if editing %}{{ inspection.driver_name }}{% endif %}">

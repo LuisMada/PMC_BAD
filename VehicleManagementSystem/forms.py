@@ -60,9 +60,10 @@ class VehicleFilterForm(forms.Form):
         required=False, 
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Search plate number, make or model'
+            'placeholder': 'Search by plate number'  # Changed from "Search plate number, make or model"
         })
     )
+
 
 class UserRegistrationForm(forms.ModelForm):
     class Meta:

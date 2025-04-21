@@ -110,11 +110,14 @@
                             <select class="form-control" name="vehicle" required {% if editing %}disabled{% endif %}>
                                 <option value="">Select Vehicle</option>
                                 {% for vehicle in vehicles %}
-                                    <option value="{{ vehicle.vehicle_id }}" {% if editing and damage_report.vehicle.vehicle_id == vehicle.vehicle_id %}selected{% endif %}>{{ vehicle }}</option>
+                                    <option value="{{ vehicle.plate_number }}" 
+                                        {% if editing and damage_report.vehicle.plate_number == vehicle.plate_number %}selected{% endif %}>
+                                        {{ vehicle.plate_number }} - {{ vehicle.vehicle_make }} {{ vehicle.vehicle_model }}
+                                    </option>
                                 {% endfor %}
                             </select>
                             {% if editing %}
-                            <input type="hidden" name="vehicle" value="{{ damage_report.vehicle.vehicle_id }}">
+                            <input type="hidden" name="vehicle" value="{{ damage_report.vehicle.plate_number }}">
                             <input type="hidden" name="report_id" value="{{ damage_report.report_id }}">
                             {% endif %}
                             <input type="date" class="form-control mt-2" name="inspection_date" required value="{% if editing %}{{ damage_report.inspection_date|date:'Y-m-d' }}{% endif %}">

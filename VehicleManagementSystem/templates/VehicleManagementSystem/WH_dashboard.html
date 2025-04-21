@@ -129,41 +129,41 @@
 
             <div class="row">
                 {% for vehicle in vehicles %}
-                    <div class="col-md-4 mb-4">
-                        {% if user.role == "Warehouse Personnel" %}
-                            <a href="{% url 'create_report' %}?vehicle_id={{ vehicle.vehicle_id }}" class="text-decoration-none">
-                        {% endif %}
-                        <div class="card {% if user.role == 'Warehouse Personnel' %}cursor-pointer{% endif %}">
-                            <div class="card-header d-flex justify-content-between align-items-center
-                                {% if vehicle.status == 'Operational' %} bg-success text-white
-                                {% elif vehicle.status == 'In Repair' %} bg-warning text-dark
-                                {% else %} bg-danger text-white {% endif %}">
-                                <span class="fw-bold">{{ vehicle.plate_number }}</span>
-                                <span>{{ vehicle.status }}</span>
-                            </div>
-                            {% if vehicle.photo %}
-                                <img src="{{ vehicle.photo.url }}" class="card-img-top" alt="{{ vehicle.vehicle_make }} {{ vehicle.vehicle_model }}" style="height: 180px; object-fit: cover;">
-                            {% else %}
-                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
-                                    <i class="bi bi-car-front text-secondary" style="font-size: 3rem;"></i>
-                                </div>
-                            {% endif %}
-                            <div class="card-body">
-                                <h5 class="card-title">{{ vehicle.vehicle_make }} - {{ vehicle.vehicle_model }}</h5>
-                                {% if vehicle.last_maintenance %}<p class="card-text"><strong>Last Maintenance:</strong> {{ vehicle.last_maintenance|date:"M d, Y" }}</p>{% else %}<p class="card-text"><strong>Last Maintenance:</strong> No Records</p>{% endif %}
-                            </div>
+                <div class="col-md-4 mb-4">
+                    {% if user.role == "Warehouse Personnel" %}
+                        <a href="{% url 'create_report' %}?plate_number={{ vehicle.plate_number }}" class="text-decoration-none">
+                    {% endif %}
+                    <div class="card {% if user.role == 'Warehouse Personnel' %}cursor-pointer{% endif %}">
+                        <div class="card-header d-flex justify-content-between align-items-center
+                            {% if vehicle.status == 'Operational' %} bg-success text-white
+                            {% elif vehicle.status == 'In Repair' %} bg-warning text-dark
+                            {% else %} bg-danger text-white {% endif %}">
+                            <span class="fw-bold">{{ vehicle.plate_number }}</span>
+                            <span>{{ vehicle.status }}</span>
                         </div>
-                        {% if user.role == "Warehouse Personnel" %}
-                            </a>
+                        {% if vehicle.photo %}
+                            <img src="{{ vehicle.photo.url }}" class="card-img-top" alt="{{ vehicle.plate_number }}" style="height: 180px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                                <i class="bi bi-car-front text-secondary" style="font-size: 3rem;"></i>
+                            </div>
                         {% endif %}
-                    </div>
-                {% empty %}
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            No vehicles available with the current filter settings.
+                        <div class="card-body">
+                            <h5 class="card-title">{{ vehicle.vehicle_make }} - {{ vehicle.vehicle_model }}</h5>
+                            {% if vehicle.last_maintenance %}<p class="card-text"><strong>Last Maintenance:</strong> {{ vehicle.last_maintenance|date:"M d, Y" }}</p>{% else %}<p class="card-text"><strong>Last Maintenance:</strong> No Records</p>{% endif %}
                         </div>
                     </div>
-                {% endfor %}
+                    {% if user.role == "Warehouse Personnel" %}
+                        </a>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        No vehicles available with the current filter settings.
+                    </div>
+                </div>
+            {% endfor %}
             </div>
         </div>
     </div>

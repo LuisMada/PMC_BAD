@@ -141,8 +141,8 @@ def create_report(request):
     vehicles = Vehicle.objects.filter(status='Operational')
     
     if request.method == "POST":
-        vehicle_id = request.POST.get('vehicle')
-        vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id)
+        plate_number = request.POST.get('vehicle')  # Changed from vehicle_id
+        vehicle = get_object_or_404(Vehicle, plate_number=plate_number)  # Changed from vehicle_id
         action = request.POST.get('action', 'submit')
         report_id = request.POST.get('report_id')
         
@@ -216,7 +216,7 @@ def create_report(request):
     
     # Check if we're editing an existing report
     report_id = request.GET.get('report_id')
-    preselected_vehicle_id = request.GET.get('vehicle_id')
+    preselected_plate = request.GET.get('plate_number')  # Changed from vehicle_id
     preselected_vehicle = None
     
     if report_id:
@@ -241,10 +241,10 @@ def create_report(request):
             messages.error(request, "Report not found.")
             return redirect("view_reports")
     else:
-        # Check if a vehicle ID was provided (from dashboard)
-        if preselected_vehicle_id:
+        # Check if a plate number was provided (from dashboard)
+        if preselected_plate:  # Changed from preselected_vehicle_id
             try:
-                preselected_vehicle = Vehicle.objects.get(vehicle_id=preselected_vehicle_id)
+                preselected_vehicle = Vehicle.objects.get(plate_number=preselected_plate)  # Changed from vehicle_id
                 # Check if the vehicle is operational
                 if preselected_vehicle.status != 'Operational':
                     messages.warning(request, f"Vehicle {preselected_vehicle} is {preselected_vehicle.status} and may not be suitable for a new inspection.")
@@ -254,7 +254,7 @@ def create_report(request):
         context = {
             'vehicles': vehicles,
             'preselected_vehicle': preselected_vehicle,
-            'today': datetime.date.today().strftime('%Y-%m-%d')  # Add today's date as default
+            'today': datetime.date.today().strftime('%Y-%m-%d')
         }
     
     return render(request, "VehicleManagementSystem/create_report.html", context)
@@ -980,8 +980,8 @@ def create_damage_report(request):
     vehicles = Vehicle.objects.all()
     
     if request.method == "POST":
-        vehicle_id = request.POST.get('vehicle')
-        vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id)
+        plate_number = request.POST.get('vehicle')  # Changed from vehicle_id
+        vehicle = get_object_or_404(Vehicle, plate_number=plate_number)  # Changed from vehicle_id
         action = request.POST.get('action', 'submit')
         report_id = request.POST.get('report_id')
         redirect_to_dashboard = request.POST.get('redirect_to_dashboard') == 'true'
