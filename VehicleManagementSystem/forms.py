@@ -1,8 +1,22 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from django.core.validators import MinValueValidator, MaxValueValidator
 from .models import CustomUser, Vehicle, VehicleDamage, VehicleInspection, DamageReport
+import datetime
+
+# Custom validator for 4-digit years
+def validate_four_digit_year(value):
+    if value is not None and (value < 1000 or value > 9999):
+        raise forms.ValidationError("Please enter a valid 4-digit year")
+    return value
 
 class VehicleInspectionForm(forms.ModelForm):
+    # Add custom validation for date fields
+    inspection_date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        error_messages={'invalid': 'Enter a valid date in YYYY-MM-DD format.'}
+    )
+    
     class Meta:
         model = VehicleInspection
         fields = [
@@ -13,14 +27,42 @@ class VehicleInspectionForm(forms.ModelForm):
             'post_comments', 'post_damages'
         ]
         widgets = {
-            'inspection_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'pre_comments': forms.Textarea(attrs={'class': 'form-control comment-field', 'placeholder': 'Enter comment here...'}),
             'pre_damages': forms.Textarea(attrs={'class': 'form-control comment-field', 'placeholder': 'Enter damages incurred here...'}),
             'post_comments': forms.Textarea(attrs={'class': 'form-control comment-field', 'placeholder': 'Enter comment here...'}),
             'post_damages': forms.Textarea(attrs={'class': 'form-control comment-field', 'placeholder': 'Enter damages incurred here...'})
         }
 
+    def clean_inspection_date(self):
+        date = self.cleaned_data.get('inspection_date')
+        if date:
+            # Ensure the year is 4 digits
+            if date.year < 1000 or date.year > 9999:
+                raise forms.ValidationError("Please enter a valid 4-digit year")
+        return date
+
 class VehicleForm(forms.ModelForm):
+    # Add explicit validators for the year field
+    year = forms.IntegerField(
+        validators=[
+            MinValueValidator(1000, message="Year must be a 4-digit number"),
+            MaxValueValidator(9999, message="Year must be a 4-digit number")
+        ],
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Enter Year (4 digits)',
+            'min': '1000',
+            'max': '9999'
+        })
+    )
+    
+    # Add custom validation for the last_maintenance date
+    last_maintenance = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        error_messages={'invalid': 'Enter a valid date in YYYY-MM-DD format.'}
+    )
+
     class Meta:
         model = Vehicle
         fields = ['plate_number', 'vehicle_make', 'vehicle_model', 'year', 'photo', 'status', 'last_maintenance']
@@ -28,11 +70,18 @@ class VehicleForm(forms.ModelForm):
             'plate_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Plate Number'}),
             'vehicle_make': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Vehicle Make'}),
             'vehicle_model': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Vehicle Model'}),
-            'year': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter Year'}),
-            'last_maintenance': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'photo': forms.FileInput(attrs={'class': 'form-control'})  # Make sure this is included
+            'photo': forms.FileInput(attrs={'class': 'form-control'})
         }
+        
+    def clean_last_maintenance(self):
+        date = self.cleaned_data.get('last_maintenance')
+        if date:
+            # Ensure the year is 4 digits
+            if date.year < 1000 or date.year > 9999:
+                raise forms.ValidationError("Please enter a valid 4-digit year")
+        return date
+
 
 class VehicleDamageForm(forms.ModelForm):
     class Meta:
@@ -60,7 +109,7 @@ class VehicleFilterForm(forms.Form):
         required=False, 
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Search by plate number'  # Changed from "Search plate number, make or model"
+            'placeholder': 'Search by plate number'
         })
     )
 
@@ -110,11 +159,14 @@ class PasswordChangeForm(forms.Form):
                 raise forms.ValidationError("Password must be at least 8 characters long")
                 
         return cleaned_data
-        
-
-# Add to forms.py
 
 class DamageReportForm(forms.ModelForm):
+    # Add custom validation for the inspection_date field
+    inspection_date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        error_messages={'invalid': 'Enter a valid date in YYYY-MM-DD format.'}
+    )
+    
     class Meta:
         model = DamageReport
         fields = [
@@ -124,7 +176,6 @@ class DamageReportForm(forms.ModelForm):
             'maintenance_diagnosis', 'estimate_repair_time', 'concerns'
         ]
         widgets = {
-            'inspection_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'battery_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
             'lights_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
             'oil_damage': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter diagnosis'}),
@@ -136,3 +187,11 @@ class DamageReportForm(forms.ModelForm):
             'estimate_repair_time': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter estimated repair time'}),
             'concerns': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter concerns here'})
         }
+        
+    def clean_inspection_date(self):
+        date = self.cleaned_data.get('inspection_date')
+        if date:
+            # Ensure the year is 4 digits
+            if date.year < 1000 or date.year > 9999:
+                raise forms.ValidationError("Please enter a valid 4-digit year")
+        return date

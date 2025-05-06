@@ -980,8 +980,8 @@ def create_damage_report(request):
     vehicles = Vehicle.objects.all()
     
     if request.method == "POST":
-        plate_number = request.POST.get('vehicle')  # Changed from vehicle_id
-        vehicle = get_object_or_404(Vehicle, plate_number=plate_number)  # Changed from vehicle_id
+        vehicle_id = request.POST.get('vehicle')
+        vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id)
         action = request.POST.get('action', 'submit')
         report_id = request.POST.get('report_id')
         redirect_to_dashboard = request.POST.get('redirect_to_dashboard') == 'true'
