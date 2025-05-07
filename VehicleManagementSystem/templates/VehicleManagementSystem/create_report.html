@@ -228,36 +228,36 @@
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr><td class="part">Battery</td><td><select class="form-control" name="post_battery">
-                                <option {% if editing and inspection.post_battery == 'OK' %}selected{% endif %}>OK</option>
-                                <option {% if editing and inspection.post_battery == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
-                            </select></td></tr>
-                            <tr><td class="part">Lights</td><td><select class="form-control" name="post_lights">
-                                <option {% if editing and inspection.post_lights == 'OK' %}selected{% endif %}>OK</option>
-                                <option {% if editing and inspection.post_lights == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
-                            </select></td></tr>
-                            <tr><td class="part">Oil</td><td><select class="form-control" name="post_oil">
-                                <option {% if editing and inspection.post_oil == 'OK' %}selected{% endif %}>OK</option>
-                                <option {% if editing and inspection.post_oil == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
-                            </select></td></tr>
-                            <tr><td class="part">Water</td><td><select class="form-control" name="post_water">
-                                <option {% if editing and inspection.post_water == 'OK' %}selected{% endif %}>OK</option>
-                                <option {% if editing and inspection.post_water == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
-                            </select></td></tr>
-                            <tr><td class="part">Brakes</td><td><select class="form-control" name="post_brakes">
-                                <option {% if editing and inspection.post_brakes == 'OK' %}selected{% endif %}>OK</option>
-                                <option {% if editing and inspection.post_brakes == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
-                            </select></td></tr>
-                            <tr><td class="part">Air</td><td><select class="form-control" name="post_air">
-                                <option {% if editing and inspection.post_air == 'OK' %}selected{% endif %}>OK</option>
-                                <option {% if editing and inspection.post_air == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
-                            </select></td></tr>
-                            <tr><td class="part">Gas</td><td><select class="form-control" name="post_gas">
-                                <option {% if editing and inspection.post_gas == 'OK' %}selected{% endif %}>OK</option>
-                                <option {% if editing and inspection.post_gas == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
-                            </select></td></tr>
-                        </tbody>
+                            <tbody>
+                                <tr><td class="part">Battery</td><td><select class="form-control" name="post_battery" id="post_battery">
+                                    <option value="OK" {% if editing and inspection.post_battery == 'OK' %}selected{% endif %}>OK</option>
+                                    <option value="Needs Repair" {% if editing and inspection.post_battery == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                                </select></td></tr>
+                                <tr><td class="part">Lights</td><td><select class="form-control" name="post_lights" id="post_lights">
+                                    <option value="OK" {% if editing and inspection.post_lights == 'OK' %}selected{% endif %}>OK</option>
+                                    <option value="Needs Repair" {% if editing and inspection.post_lights == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                                </select></td></tr>
+                                <tr><td class="part">Oil</td><td><select class="form-control" name="post_oil" id="post_oil">
+                                    <option value="OK" {% if editing and inspection.post_oil == 'OK' %}selected{% endif %}>OK</option>
+                                    <option value="Needs Repair" {% if editing and inspection.post_oil == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                                </select></td></tr>
+                                <tr><td class="part">Water</td><td><select class="form-control" name="post_water" id="post_water">
+                                    <option value="OK" {% if editing and inspection.post_water == 'OK' %}selected{% endif %}>OK</option>
+                                    <option value="Needs Repair" {% if editing and inspection.post_water == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                                </select></td></tr>
+                                <tr><td class="part">Brakes</td><td><select class="form-control" name="post_brakes" id="post_brakes">
+                                    <option value="OK" {% if editing and inspection.post_brakes == 'OK' %}selected{% endif %}>OK</option>
+                                    <option value="Needs Repair" {% if editing and inspection.post_brakes == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                                </select></td></tr>
+                                <tr><td class="part">Air</td><td><select class="form-control" name="post_air" id="post_air">
+                                    <option value="OK" {% if editing and inspection.post_air == 'OK' %}selected{% endif %}>OK</option>
+                                    <option value="Needs Repair" {% if editing and inspection.post_air == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                                </select></td></tr>
+                                <tr><td class="part">Gas</td><td><select class="form-control" name="post_gas" id="post_gas">
+                                    <option value="OK" {% if editing and inspection.post_gas == 'OK' %}selected{% endif %}>OK</option>
+                                    <option value="Needs Repair" {% if editing and inspection.post_gas == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                                </select></td></tr>
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -277,6 +277,9 @@
 </div>
 
 <script>
+    // Track which post-delivery fields have been manually changed
+    const modifiedPostFields = new Set();
+
     document.addEventListener('DOMContentLoaded', function() {
         const vehicleSelect = document.querySelector('select[name="vehicle"]');
         
@@ -295,6 +298,15 @@
         if (vehicleSelect.value !== "") {
             updateVehicleDetails();
         }
+        
+        // Add listeners to pre-delivery selects
+        setupPreDeliveryListeners();
+        
+        // Add listeners to post-delivery selects
+        setupPostDeliveryListeners();
+        
+        // Check for initial differing values
+        checkInitialValues();
         
         // Show the correct form section when editing
         {% if editing %}
@@ -316,6 +328,70 @@
             {% endif %}
         {% endif %}
     });
+
+    // Add this function to detect initial differences
+    function checkInitialValues() {
+        const isEditing = document.querySelector('.edit-mode-badge') !== null;
+        
+        if (isEditing) {
+            const preComponents = [
+                'battery', 'lights', 'oil', 'water', 'brakes', 'air', 'gas'
+            ];
+            
+            preComponents.forEach(component => {
+                const preSelect = document.querySelector(`select[name="pre_${component}"]`);
+                const postSelect = document.querySelector(`select[name="post_${component}"]`);
+                
+                if (preSelect && postSelect && preSelect.value !== postSelect.value) {
+                    // If values are already different, mark as modified
+                    modifiedPostFields.add(component);
+                }
+            });
+        }
+    }
+
+    // Add this function to setup pre-delivery listeners
+    function setupPreDeliveryListeners() {
+        const preComponents = [
+            'battery', 'lights', 'oil', 'water', 'brakes', 'air', 'gas'
+        ];
+        
+        preComponents.forEach(component => {
+            const preSelect = document.querySelector(`select[name="pre_${component}"]`);
+            
+            if (preSelect) {
+                preSelect.addEventListener('change', function() {
+                    const postSelect = document.querySelector(`select[name="post_${component}"]`);
+                    if (postSelect && !modifiedPostFields.has(component)) {
+                        postSelect.value = this.value;
+                    }
+                });
+            }
+        });
+    }
+
+    // Add this function to setup post-delivery listeners
+    function setupPostDeliveryListeners() {
+        const preComponents = [
+            'battery', 'lights', 'oil', 'water', 'brakes', 'air', 'gas'
+        ];
+        
+        preComponents.forEach(component => {
+            const preSelect = document.querySelector(`select[name="pre_${component}"]`);
+            const postSelect = document.querySelector(`select[name="post_${component}"]`);
+            
+            if (preSelect && postSelect) {
+                postSelect.addEventListener('change', function() {
+                    // Check if value is different from pre-delivery
+                    if (this.value !== preSelect.value) {
+                        modifiedPostFields.add(component);
+                    } else {
+                        modifiedPostFields.delete(component);
+                    }
+                });
+            }
+        });
+    }
 
     function showPreDelivery() {
         // Validate vehicle selection before proceeding
@@ -343,8 +419,8 @@
     }
 
     function showPostDelivery() {
-        // Copy pre-delivery inspection values to post-delivery inspection fields
-        copyPreToPostValues();
+        // Use our improved synchronization function
+        synchronizePreToPostValues();
         
         document.getElementById("preDeliveryForm").classList.add("hidden");
         document.getElementById("preDeliveryForm").classList.remove("d-flex");
@@ -353,19 +429,22 @@
         document.getElementById("postDeliveryForm").classList.add("d-flex");
     }
 
-    function copyPreToPostValues() {
-        // Get all pre-delivery select elements
+    // Replace the copyPreToPostValues with this improved version
+    function synchronizePreToPostValues() {
         const preComponents = [
             'battery', 'lights', 'oil', 'water', 'brakes', 'air', 'gas'
         ];
         
-        // Copy values from pre to post
+        // Copy values from pre to post only if not manually modified
         preComponents.forEach(component => {
             const preSelect = document.querySelector(`select[name="pre_${component}"]`);
             const postSelect = document.querySelector(`select[name="post_${component}"]`);
             
             if (preSelect && postSelect) {
-                postSelect.value = preSelect.value;
+                // Only update if this field hasn't been manually modified
+                if (!modifiedPostFields.has(component)) {
+                    postSelect.value = preSelect.value;
+                }
             }
         });
     }

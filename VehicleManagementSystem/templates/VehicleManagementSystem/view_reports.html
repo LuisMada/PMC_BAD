@@ -10,6 +10,10 @@
         border-radius: 8px;
         overflow: hidden;
     }
+    .status-post {
+        background-color: #cce5ff;
+        color: #004085;
+    }
     .report-header {
         background-color: #334481;
         color: white;
@@ -99,6 +103,8 @@
                     <td>
                         {% if report.is_submitted %}
                             <span class="status-badge status-complete">Complete</span>
+                        {% elif report.completion_status == 'Post-Delivery Only' %}
+                            <span class="status-badge status-post">Post-Delivery Only</span>
                         {% elif report.completion_status == 'Pre-Delivery Only' %}
                             <span class="status-badge status-partial">Pre-Delivery Only</span>
                         {% else %}

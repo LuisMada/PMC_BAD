@@ -117,10 +117,11 @@ class VehicleInspection(models.Model):
     )
     
     COMPLETION_STATUS = (
-        ('Draft', 'Draft'),
-        ('Pre-Delivery Only', 'Pre-Delivery Only'),
-        ('Complete', 'Complete'),
-    )
+    ('Post-Delivery', 'Post-Delivery'),
+    ('Pre-Delivery Only', 'Pre-Delivery Only'),
+    ('Ready for Submission', 'Ready for Submission'),
+    ('Complete', 'Complete'),
+)
     
     # Basic Information
     report_id = models.AutoField(primary_key=True)
@@ -132,7 +133,7 @@ class VehicleInspection(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     # Status field to track completion
-    completion_status = models.CharField(max_length=20, choices=COMPLETION_STATUS, default='Draft')
+    completion_status = models.CharField(max_length=20, choices=COMPLETION_STATUS, default='Post-Delivery')
     
     # Pre-Delivery Inspection
     pre_battery = models.CharField(max_length=20, choices=COMPONENT_STATUS, null=True, blank=True)
@@ -183,10 +184,13 @@ class VehicleInspection(models.Model):
         # Only set to Complete if explicitly submitted
         if self.is_submitted and pre_complete and post_complete:
             self.completion_status = 'Complete'
+        elif pre_complete and post_complete:
+            # New status for when both sections are complete but not submitted
+            self.completion_status = 'Ready for Submission'
         elif pre_complete:
             self.completion_status = 'Pre-Delivery Only'
         else:
-            self.completion_status = 'Draft'
+            self.completion_status = 'Post-Delivery'
 
 # Add to models.py
 
@@ -238,7 +242,7 @@ class DamageReport(models.Model):
         super().save(*args, **kwargs)
         
         # After saving, update the vehicle's last_maintenance date
-        # Only update if this report is submitted (not a draft)
+        # Only update if this report is submitted (not a Post-Delivery)
         if self.is_submitted:
             # Update the vehicle's last_maintenance field with the inspection date
             self.vehicle.last_maintenance = self.inspection_date

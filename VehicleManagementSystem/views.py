@@ -179,15 +179,19 @@ def create_report(request):
             inspection.pre_comments = request.POST.get('pre_comments', '')
         
         # Update post-delivery fields if they exist in POST
-        if 'post_battery' in request.POST:
-            inspection.post_battery = request.POST.get('post_battery')
-            inspection.post_lights = request.POST.get('post_lights')
-            inspection.post_oil = request.POST.get('post_oil')
-            inspection.post_water = request.POST.get('post_water')
-            inspection.post_brakes = request.POST.get('post_brakes')
-            inspection.post_air = request.POST.get('post_air')
-            inspection.post_gas = request.POST.get('post_gas')
+        components = ['battery', 'lights', 'oil', 'water', 'brakes', 'air', 'gas']
+
+        # Check and update each post-delivery field separately
+        for component in components:
+            post_key = f'post_{component}'
+            if post_key in request.POST:
+                setattr(inspection, post_key, request.POST.get(post_key))
+
+        # Update post-delivery comments and damages separately
+        if 'post_comments' in request.POST:
             inspection.post_comments = request.POST.get('post_comments', '')
+
+        if 'post_damages' in request.POST:
             inspection.post_damages = request.POST.get('post_damages', '')
         
         # Only mark as submitted if the action is 'submit'
@@ -259,35 +263,6 @@ def create_report(request):
     
     return render(request, "VehicleManagementSystem/create_report.html", context)
     
-    # Check if we're editing an existing report
-    report_id = request.GET.get('report_id')
-    if report_id:
-        try:
-            inspection = VehicleInspection.objects.get(report_id=report_id)
-            
-            # Don't allow editing submitted reports
-            if inspection.is_submitted:
-                messages.error(request, "This report has already been submitted and cannot be edited.")
-                return redirect("view_reports")
-                
-            if inspection.inspector != request.user:
-                messages.error(request, "You don't have permission to edit this report.")
-                return redirect("view_reports")
-            
-            context = {
-                'vehicles': vehicles,
-                'inspection': inspection,
-                'editing': True
-            }
-        except VehicleInspection.DoesNotExist:
-            messages.error(request, "Report not found.")
-            return redirect("view_reports")
-    else:
-        context = {
-            'vehicles': vehicles
-        }
-    
-    return render(request, "VehicleManagementSystem/create_report.html", context)
 
 # Add to views.py
 @login_required

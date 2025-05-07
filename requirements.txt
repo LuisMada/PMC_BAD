@@ -18,6 +18,7 @@ fastapi==0.99.1
 gitdb==4.0.12
 GitPython==3.1.44
 google-auth==2.23.0
+gunicorn
 google-auth-oauthlib==1.2.1
 gspread==5.11.3
 h11==0.14.0
