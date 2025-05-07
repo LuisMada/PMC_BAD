@@ -120,7 +120,7 @@
                             <input type="hidden" name="vehicle" value="{{ inspection.vehicle.plate_number }}">
                             <input type="hidden" name="report_id" value="{{ inspection.report_id }}">
                             {% endif %}
-                            <input type="text" class="form-control mt-2" name="driver_name" placeholder="Assigned Driver" value="{% if editing %}{{ inspection.driver_name }}{% endif %}">
+                            <input type="text" class="form-control mt-2" name="driver_name" placeholder="Assigned Driver" value="{% if editing %}{{ inspection.driver_name }}{% endif %}" required>
                             <input type="date" class="form-control mt-2" name="inspection_date" required value="{% if editing %}{{ inspection.inspection_date|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}">
                         </div>
                         <input type="hidden" name="action" id="form_action" value="submit">
@@ -397,6 +397,7 @@
         // Validate vehicle selection before proceeding
         const vehicleSelect = document.querySelector('select[name="vehicle"]');
         const dateInput = document.querySelector('input[name="inspection_date"]');
+        const driverInput = document.querySelector('input[name="driver_name"]');
         
         if (vehicleSelect.value === "") {
             alert("Please select a vehicle before proceeding.");
@@ -405,6 +406,11 @@
         
         if (dateInput.value === "") {
             alert("Please select an inspection date before proceeding.");
+            return;
+        }
+        
+        if (driverInput.value === "") {
+            alert("Please enter the name of the assigned driver before proceeding.");
             return;
         }
         
