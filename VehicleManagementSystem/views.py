@@ -943,7 +943,6 @@ def reset_password(request, employee_id):
     return redirect("view_accounts")
 
 # Add to views.py
-
 @login_required
 def create_damage_report(request):
     """View to create a damage report for a vehicle"""
@@ -955,8 +954,8 @@ def create_damage_report(request):
     vehicles = Vehicle.objects.all()
     
     if request.method == "POST":
-        vehicle_id = request.POST.get('vehicle')
-        vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id)
+        plate_number = request.POST.get('vehicle')
+        vehicle = get_object_or_404(Vehicle, plate_number=plate_number)
         action = request.POST.get('action', 'submit')
         report_id = request.POST.get('report_id')
         redirect_to_dashboard = request.POST.get('redirect_to_dashboard') == 'true'
@@ -974,7 +973,8 @@ def create_damage_report(request):
                 messages.error(request, "This report has already been submitted and cannot be edited.")
                 return redirect("view_damage_reports")
         else:
-            # Create new damage report
+            # Create new damage report WITHOUT assigning the report_id
+            # The model's save method will handle generating a unique report_id
             damage_report = DamageReport(
                 vehicle=vehicle,
                 inspector=request.user,
@@ -999,6 +999,7 @@ def create_damage_report(request):
         if action == 'submit':
             damage_report.is_submitted = True
         
+        # Now save the damage report, letting the save method handle the report_id
         damage_report.save()
         
         if action == 'save_exit':
@@ -1042,7 +1043,8 @@ def create_damage_report(request):
             context = {
                 'vehicles': vehicles,
                 'damage_report': damage_report,
-                'editing': True
+                'editing': True,
+                'initial_section': determine_initial_section(damage_report)  # Add a function to determine which section to show
             }
         except DamageReport.DoesNotExist:
             messages.error(request, "Report not found.")
@@ -1053,6 +1055,21 @@ def create_damage_report(request):
         }
     
     return render(request, "VehicleManagementSystem/create_damage_report.html", context)
+
+# Helper function to determine which section to show when editing
+def determine_initial_section(damage_report):
+    # Check for maintenance diagnosis filled in
+    if damage_report.maintenance_diagnosis or damage_report.estimate_repair_time or damage_report.concerns:
+        return 'maintenance'
+    # Check for any component damages filled in
+    elif (damage_report.battery_damage or damage_report.lights_damage or 
+          damage_report.oil_damage or damage_report.water_damage or 
+          damage_report.brakes_damage or damage_report.air_damage or 
+          damage_report.gas_damage):
+        return 'damage'
+    # Default to basic info
+    else:
+        return 'basic'
 
 @login_required
 def view_damage_reports(request):
