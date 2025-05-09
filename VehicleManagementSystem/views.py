@@ -119,6 +119,17 @@ def view_reports(request):
             reports = reports.filter(inspector=request.user)
         # Operations Team can see all reports (for now, can be restricted if needed)
     
+    # Apply search filter if provided
+    search_query = request.GET.get('search', '')
+    if search_query:
+        reports = reports.filter(
+            Q(vehicle__plate_number__icontains=search_query) | 
+            Q(vehicle__vehicle_make__icontains=search_query) | 
+            Q(vehicle__vehicle_model__icontains=search_query) |
+            Q(inspector__name__icontains=search_query) |
+            Q(report_id__icontains=search_query)
+        )
+    
     # Set up pagination
     paginator = Paginator(reports, 10)  # Show 10 reports per page
     page_number = request.GET.get('page')
@@ -127,6 +138,7 @@ def view_reports(request):
     context = {
         'page_obj': page_obj,
         'reports': page_obj.object_list,
+        'search_query': search_query  # Add search_query to context
     }
     
     return render(request, "VehicleManagementSystem/view_reports.html", context)
