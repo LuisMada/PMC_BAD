@@ -1,3 +1,5 @@
+import os
+from django.core.exceptions import ValidationError
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -9,6 +11,14 @@ def validate_four_digit_year(value):
     if value is not None and (value < 1000 or value > 9999):
         raise forms.ValidationError("Please enter a valid 4-digit year")
     return value
+
+# Add a standalone validator function for image file extensions
+def validate_image_file_extension(value):
+    if value:
+        ext = os.path.splitext(value.name)[1]  # Get the file extension
+        valid_extensions = ['.jpg', '.jpeg', '.png']
+        if not ext.lower() in valid_extensions:
+            raise ValidationError('Only JPEG and PNG image files are allowed.')
 
 class VehicleInspectionForm(forms.ModelForm):
     # Add custom validation for date fields
@@ -62,6 +72,13 @@ class VehicleForm(forms.ModelForm):
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         error_messages={'invalid': 'Enter a valid date in YYYY-MM-DD format.'}
     )
+    
+    # Add validator to the photo field
+    photo = forms.ImageField(
+        required=False,
+        validators=[validate_image_file_extension],
+        widget=forms.FileInput(attrs={'class': 'form-control'})
+    )
 
     class Meta:
         model = Vehicle
@@ -71,7 +88,7 @@ class VehicleForm(forms.ModelForm):
             'vehicle_make': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Vehicle Make'}),
             'vehicle_model': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Vehicle Model'}),
             'status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'photo': forms.FileInput(attrs={'class': 'form-control'})
+            # Photo widget is defined in the photo field above
         }
         
     def clean_last_maintenance(self):

@@ -162,11 +162,13 @@
                                 <i class="bi bi-car-front-fill text-secondary" style="font-size: 4rem;"></i>
                             {% endif %}
                         </div>
+                        <!-- Replace the image upload button section with this -->
                         <div class="d-grid">
                             <div class="image-upload-btn btn btn-outline-secondary">
                                 <i class="bi bi-upload"></i> Change Vehicle Image
                                 {{ form.photo }}
                             </div>
+                            <small class="text-muted mt-1">Only JPEG and PNG images allowed.</small>
                         </div>
                         {% if form.photo.errors %}
                             <div class="text-danger mt-1">
@@ -309,6 +311,14 @@
     document.getElementById('{{ form.photo.id_for_label }}').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please select only JPEG or PNG image files.');
+                this.value = ''; // Clear the input
+                return;
+            }
+            
             const reader = new FileReader();
             reader.onload = function(event) {
                 const imagePreview = document.getElementById('imagePreview');

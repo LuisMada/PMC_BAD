@@ -531,28 +531,30 @@ def manage_vehicles(request):
 
 @login_required
 def add_vehicle(request):
-    print("Add vehicle view called")
     if request.user.role != "Vehicle Management Team":
         messages.error(request, "You don't have permission to access this page.")
         return redirect("WH_dashboard")
         
     if request.method == "POST":
-        print("POST request received")
-        print("POST data:", request.POST)
-        print("FILES data:", request.FILES)
         form = VehicleForm(request.POST, request.FILES)
+        
+        # Check for image file type
+        if 'photo' in request.FILES:
+            image_file = request.FILES['photo']
+            file_ext = os.path.splitext(image_file.name)[1].lower()
+            if file_ext not in ['.jpg', '.jpeg', '.png']:
+                messages.error(request, "Only JPEG and PNG image files are allowed.")
+                return render(request, "VehicleManagementSystem/add_vehicle.html", {"form": form})
+        
         if form.is_valid():
-            print("Form is valid")
             vehicle = form.save()
-            print(f"Vehicle saved with ID: {vehicle.vehicle_id}")
             messages.success(request, "Vehicle added successfully!")
             return redirect("manage_vehicles")
-        else:
-            print("Form errors:", form.errors)
     else:
         form = VehicleForm()
     
     return render(request, "VehicleManagementSystem/add_vehicle.html", {"form": form})
+
 
 @login_required
 def edit_vehicle(request, plate_number):
@@ -568,6 +570,22 @@ def edit_vehicle(request, plate_number):
     damage_reports = DamageReport.objects.filter(vehicle=vehicle).order_by('-created_at')
     
     if request.method == "POST":
+        # Check for image file type
+        if 'photo' in request.FILES:
+            image_file = request.FILES['photo']
+            file_ext = os.path.splitext(image_file.name)[1].lower()
+            if file_ext not in ['.jpg', '.jpeg', '.png']:
+                form = VehicleForm(instance=vehicle)
+                messages.error(request, "Only JPEG and PNG image files are allowed.")
+                context = {
+                    "form": form,
+                    "vehicle": vehicle,
+                    "damages": damages,
+                    "damage_form": VehicleDamageForm(),
+                    "damage_reports": damage_reports
+                }
+                return render(request, "VehicleManagementSystem/edit_vehicle.html", context)
+        
         form = VehicleForm(request.POST, request.FILES, instance=vehicle)
         if form.is_valid():
             form.save()
@@ -583,7 +601,7 @@ def edit_vehicle(request, plate_number):
         "vehicle": vehicle,
         "damages": damages,
         "damage_form": damage_form,
-        "damage_reports": damage_reports  # Add damage reports to the context
+        "damage_reports": damage_reports
     }
     
     return render(request, "VehicleManagementSystem/edit_vehicle.html", context)
