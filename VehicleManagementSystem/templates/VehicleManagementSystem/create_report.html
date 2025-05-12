@@ -305,7 +305,7 @@
         // Add listeners to post-delivery selects
         setupPostDeliveryListeners();
         
-        // Check for initial differing values
+        // Check for initial differing values - VERY IMPORTANT for editing mode
         checkInitialValues();
         
         // Show the correct form section when editing
@@ -329,7 +329,7 @@
         {% endif %}
     });
 
-    // Add this function to detect initial differences
+    // Improved detection of initial differences when editing
     function checkInitialValues() {
         const isEditing = document.querySelector('.edit-mode-badge') !== null;
         
@@ -342,15 +342,19 @@
                 const preSelect = document.querySelector(`select[name="pre_${component}"]`);
                 const postSelect = document.querySelector(`select[name="post_${component}"]`);
                 
-                if (preSelect && postSelect && preSelect.value !== postSelect.value) {
-                    // If values are already different, mark as modified
-                    modifiedPostFields.add(component);
+                if (preSelect && postSelect) {
+                    // Check if values are different
+                    if (preSelect.value !== postSelect.value) {
+                        // If values are already different, mark as modified
+                        modifiedPostFields.add(component);
+                        console.log(`Initial difference detected for ${component}: pre=${preSelect.value}, post=${postSelect.value}`);
+                    }
                 }
             });
         }
     }
 
-    // Add this function to setup pre-delivery listeners
+    // Setup listeners on pre-delivery components to update post components when not modified
     function setupPreDeliveryListeners() {
         const preComponents = [
             'battery', 'lights', 'oil', 'water', 'brakes', 'air', 'gas'
@@ -362,15 +366,17 @@
             if (preSelect) {
                 preSelect.addEventListener('change', function() {
                     const postSelect = document.querySelector(`select[name="post_${component}"]`);
+                    // Only update post value if not manually modified
                     if (postSelect && !modifiedPostFields.has(component)) {
                         postSelect.value = this.value;
+                        console.log(`Auto-updated post_${component} to match pre value: ${this.value}`);
                     }
                 });
             }
         });
     }
 
-    // Add this function to setup post-delivery listeners
+    // Setup listeners on post-delivery components to track which ones are manually changed
     function setupPostDeliveryListeners() {
         const preComponents = [
             'battery', 'lights', 'oil', 'water', 'brakes', 'air', 'gas'
@@ -382,11 +388,15 @@
             
             if (preSelect && postSelect) {
                 postSelect.addEventListener('change', function() {
+                    console.log(`Post ${component} changed to: ${this.value}, pre value is: ${preSelect.value}`);
+                    
                     // Check if value is different from pre-delivery
                     if (this.value !== preSelect.value) {
                         modifiedPostFields.add(component);
+                        console.log(`Marked ${component} as modified`);
                     } else {
                         modifiedPostFields.delete(component);
+                        console.log(`Unmarked ${component} as modified`);
                     }
                 });
             }
@@ -435,11 +445,14 @@
         document.getElementById("postDeliveryForm").classList.add("d-flex");
     }
 
-    // Replace the copyPreToPostValues with this improved version
+    // Improved synchronization function 
     function synchronizePreToPostValues() {
         const preComponents = [
             'battery', 'lights', 'oil', 'water', 'brakes', 'air', 'gas'
         ];
+        
+        const isEditing = document.querySelector('.edit-mode-badge') !== null;
+        console.log(`Synchronizing values (editing mode: ${isEditing})`);
         
         // Copy values from pre to post only if not manually modified
         preComponents.forEach(component => {
@@ -449,7 +462,10 @@
             if (preSelect && postSelect) {
                 // Only update if this field hasn't been manually modified
                 if (!modifiedPostFields.has(component)) {
+                    console.log(`Syncing post_${component} with pre value: ${preSelect.value}`);
                     postSelect.value = preSelect.value;
+                } else {
+                    console.log(`Skipping sync for modified component: ${component}`);
                 }
             }
         });
