@@ -54,6 +54,11 @@
                 <i class="bi bi-car-front"></i> PMC Vehicle Management
             </a>
             
+            <!-- Add hamburger toggle button for mobile -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
             {% if user.is_authenticated %}
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
@@ -70,13 +75,25 @@
                             <a class="nav-link" href="{% url 'VMT_dashboard' %}">Dashboard</a>
                         </li>
                     {% endif %}
+                    
+                    <!-- Add logout link inside the collapsible menu for mobile -->
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{% url 'logout' %}">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
                 </ul>
+                
+                <!-- User info visible only in the collapsed menu -->
+                <div class="d-lg-none mt-2 mb-2 text-light">
+                    <i class="bi bi-person-circle"></i> {{ user.name }} ({{ user.role }})
+                </div>
             </div>
-            {% endif %}
             
-            <div class="d-flex">
+            <!-- Keep the logout button outside for desktop view only -->
+            <div class="d-none d-lg-flex">
                 {% if user.is_authenticated %}
-                    <span class="navbar-text me-3 d-none d-md-inline">
+                    <span class="navbar-text me-3">
                         <i class="bi bi-person-circle"></i> {{ user.name }} ({{ user.role }})
                     </span>
                     <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">
@@ -88,6 +105,14 @@
                     </a>
                 {% endif %}
             </div>
+            {% else %}
+            <!-- Non-authenticated view -->
+            <div class="d-flex">
+                <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}">
+                    Login <i class="bi bi-box-arrow-in-right"></i>
+                </a>
+            </div>
+            {% endif %}
         </div>
     </nav>
 
