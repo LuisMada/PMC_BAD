@@ -8,7 +8,22 @@
     .table-container {
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible;
+    }
+    .responsive-table-container {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    @media (max-width: 767px) {
+        .responsive-table-container::after {
+            content: "← Swipe →";
+            display: block;
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 0.25rem;
+            color: #6c757d;
+        }
     }
     .account-header {
         background-color: #334481;
@@ -90,100 +105,102 @@
     </div>
 
     <div class="table-container">
-        <table class="table table-hover mb-0">
-            <thead class="account-header">
-                <tr>
-                    <th scope="col">Employee ID</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Role</th>
-                    <th scope="col" class="text-center">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for account in accounts %}
-                <tr class="account-row">
-                    <td>{{ account.employee_id }}</td>
-                    <td>{{ account.name }}</td>
-                    <td>{{ account.email }}</td>
-                    <td>
-                        <span class="role-badge 
-                            {% if account.role == 'Vehicle Management Team' %}role-vmt
-                            {% elif account.role == 'Warehouse Personnel' %}role-warehouse
-                            {% else %}role-operations{% endif %}">
-                            {{ account.role }}
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        <div class="action-buttons">
-                            <a href="{% url 'edit_account' account.employee_id %}" class="edit-account-btn" title="Edit Account">
-                                <i class="bi bi-pencil-square fs-5"></i>
-                            </a>
+        <div class="responsive-table-container">
+            <table class="table table-hover mb-0">
+                <thead class="account-header">
+                    <tr>
+                        <th scope="col">Employee ID</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Role</th>
+                        <th scope="col" class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in accounts %}
+                    <tr class="account-row">
+                        <td>{{ account.employee_id }}</td>
+                        <td>{{ account.name }}</td>
+                        <td>{{ account.email }}</td>
+                        <td>
+                            <span class="role-badge 
+                                {% if account.role == 'Vehicle Management Team' %}role-vmt
+                                {% elif account.role == 'Warehouse Personnel' %}role-warehouse
+                                {% else %}role-operations{% endif %}">
+                                {{ account.role }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="action-buttons">
+                                <a href="{% url 'edit_account' account.employee_id %}" class="edit-account-btn" title="Edit Account">
+                                    <i class="bi bi-pencil-square fs-5"></i>
+                                </a>
+                                
+                                {% if account.employee_id != request.user.employee_id %}
+                                    <a href="#" class="reset-password-btn" data-bs-toggle="modal" data-bs-target="#resetPasswordModal{{ account.employee_id }}" title="Reset Password">
+                                        <i class="bi bi-key fs-5"></i>
+                                    </a>
+                                    <a href="#" class="delete-account-btn" data-bs-toggle="modal" data-bs-target="#deleteAccountModal{{ account.employee_id }}" title="Delete Account">
+                                        <i class="bi bi-trash fs-5"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
                             
-                            {% if account.employee_id != request.user.employee_id %}
-                                <a href="#" class="reset-password-btn" data-bs-toggle="modal" data-bs-target="#resetPasswordModal{{ account.employee_id }}" title="Reset Password">
-                                    <i class="bi bi-key fs-5"></i>
-                                </a>
-                                <a href="#" class="delete-account-btn" data-bs-toggle="modal" data-bs-target="#deleteAccountModal{{ account.employee_id }}" title="Delete Account">
-                                    <i class="bi bi-trash fs-5"></i>
-                                </a>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Reset Password Confirmation Modal -->
-                        <div class="modal fade" id="resetPasswordModal{{ account.employee_id }}" tabindex="-1" aria-labelledby="resetPasswordModalLabel{{ account.employee_id }}" aria-hidden="true">
-                          <div class="modal-dialog">
-                            <div class="modal-content">
-                              <div class="modal-header">
-                                <h5 class="modal-title" id="resetPasswordModalLabel{{ account.employee_id }}">Confirm Password Reset</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                              </div>
-                              <div class="modal-body">
-                                <p>Are you sure you want to reset the password for {{ account.name }} ({{ account.employee_id }})?</p>
-                                <p class="text-warning"><i class="bi bi-exclamation-triangle me-2"></i>This will reset their password to the default (00000000) and they will be prompted to change it on next login.</p>
-                              </div>
-                              <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <form action="{% url 'reset_password' account.employee_id %}" method="post">
-                                  {% csrf_token %}
-                                  <button type="submit" class="btn btn-warning">Reset Password</button>
-                                </form>
+                            <!-- Reset Password Confirmation Modal -->
+                            <div class="modal fade" id="resetPasswordModal{{ account.employee_id }}" tabindex="-1" aria-labelledby="resetPasswordModalLabel{{ account.employee_id }}" aria-hidden="true">
+                              <div class="modal-dialog">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title" id="resetPasswordModalLabel{{ account.employee_id }}">Confirm Password Reset</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                  </div>
+                                  <div class="modal-body">
+                                    <p>Are you sure you want to reset the password for {{ account.name }} ({{ account.employee_id }})?</p>
+                                    <p class="text-warning"><i class="bi bi-exclamation-triangle me-2"></i>This will reset their password to the default (00000000) and they will be prompted to change it on next login.</p>
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{% url 'reset_password' account.employee_id %}" method="post">
+                                      {% csrf_token %}
+                                      <button type="submit" class="btn btn-warning">Reset Password</button>
+                                    </form>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                        
-                        <!-- Delete Confirmation Modal -->
-                        <div class="modal fade" id="deleteAccountModal{{ account.employee_id }}" tabindex="-1" aria-labelledby="deleteAccountModalLabel{{ account.employee_id }}" aria-hidden="true">
-                          <div class="modal-dialog">
-                            <div class="modal-content">
-                              <div class="modal-header">
-                                <h5 class="modal-title" id="deleteAccountModalLabel{{ account.employee_id }}">Confirm Delete</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                              </div>
-                              <div class="modal-body">
-                                <p>Are you sure you want to delete the account for {{ account.name }} ({{ account.employee_id }})?</p>
-                                <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>This action cannot be undone.</p>
-                              </div>
-                              <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <form action="{% url 'delete_account' account.employee_id %}" method="post">
-                                  {% csrf_token %}
-                                  <button type="submit" class="btn btn-danger">Delete</button>
-                                </form>
+                            
+                            <!-- Delete Confirmation Modal -->
+                            <div class="modal fade" id="deleteAccountModal{{ account.employee_id }}" tabindex="-1" aria-labelledby="deleteAccountModalLabel{{ account.employee_id }}" aria-hidden="true">
+                              <div class="modal-dialog">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteAccountModalLabel{{ account.employee_id }}">Confirm Delete</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                  </div>
+                                  <div class="modal-body">
+                                    <p>Are you sure you want to delete the account for {{ account.name }} ({{ account.employee_id }})?</p>
+                                    <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>This action cannot be undone.</p>
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{% url 'delete_account' account.employee_id %}" method="post">
+                                      {% csrf_token %}
+                                      <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center py-4">No user accounts found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">No user accounts found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     {% if page_obj.paginator.num_pages > 1 %}

@@ -8,7 +8,22 @@
     .table-container {
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible;
+    }
+    .responsive-table-container {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    @media (max-width: 767px) {
+        .responsive-table-container::after {
+            content: "← Swipe →";
+            display: block;
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 0.25rem;
+            color: #6c757d;
+        }
     }
     .status-post {
         background-color: #cce5ff;
@@ -110,82 +125,84 @@
     </div>
 
     <div class="table-container">
-        <table class="table table-hover mb-0">
-            <thead class="report-header">
-                <tr>
-                    <th scope="col">IR#</th>
-                    <th scope="col">Date Created</th>
-                    <th scope="col">Vehicle</th>
-                    <th scope="col">Plate Number</th>
-                    <th scope="col">Issued by</th>
-                    <th scope="col">Status</th>
-                    <th scope="col" class="text-center">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for report in reports %}
-                <tr class="report-row">
-                    <td>IR{{ report.report_id }}</td>
-                    <td>{{ report.inspection_date|date:"M d, Y" }}</td>
-                    <td>{{ report.vehicle.vehicle_make }} {{ report.vehicle.vehicle_model }}</td>
-                    <td>{{ report.vehicle.plate_number }}</td>
-                    <td>{{ report.inspector.name }}</td>
-                    <td>
-                        {% if report.is_submitted %}
-                            <span class="status-badge status-complete">Complete</span>
-                        {% elif report.completion_status == 'Post-Delivery Only' %}
-                            <span class="status-badge status-post">Post-Delivery Only</span>
-                        {% elif report.completion_status == 'Pre-Delivery Only' %}
-                            <span class="status-badge status-partial">Pre-Delivery Only</span>
-                        {% else %}
-                            <span class="status-badge status-draft">Draft</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <div class="action-buttons">
-                            {% if not report.is_submitted and report.inspector == user %}
-                                <a href="{% url 'create_report' %}?report_id={{ report.report_id }}" class="edit-report-btn" title="Edit Report">
-                                    <i class="bi bi-pencil-square fs-5"></i>
-                                </a>
-                                <a href="#" class="delete-report-btn text-danger" data-bs-toggle="modal" data-bs-target="#deleteReportModal{{ report.report_id }}" title="Delete Report">
-                                    <i class="bi bi-trash fs-5"></i>
-                                </a>
+        <div class="responsive-table-container">
+            <table class="table table-hover mb-0">
+                <thead class="report-header">
+                    <tr>
+                        <th scope="col">IR#</th>
+                        <th scope="col">Date Created</th>
+                        <th scope="col">Vehicle</th>
+                        <th scope="col">Plate Number</th>
+                        <th scope="col">Issued by</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr class="report-row">
+                        <td>IR{{ report.report_id }}</td>
+                        <td>{{ report.inspection_date|date:"M d, Y" }}</td>
+                        <td>{{ report.vehicle.vehicle_make }} {{ report.vehicle.vehicle_model }}</td>
+                        <td>{{ report.vehicle.plate_number }}</td>
+                        <td>{{ report.inspector.name }}</td>
+                        <td>
+                            {% if report.is_submitted %}
+                                <span class="status-badge status-complete">Complete</span>
+                            {% elif report.completion_status == 'Post-Delivery Only' %}
+                                <span class="status-badge status-post">Post-Delivery Only</span>
+                            {% elif report.completion_status == 'Pre-Delivery Only' %}
+                                <span class="status-badge status-partial">Pre-Delivery Only</span>
+                            {% else %}
+                                <span class="status-badge status-draft">Draft</span>
                             {% endif %}
-                            <a href="{% url 'generate_report_pdf' report.report_id %}" class="open-report-btn" target="_blank" title="View PDF">
-                                <i class="bi bi-box-arrow-up-right fs-5"></i>
-                            </a>
-                        </div>
-                        
-                        <!-- Delete Confirmation Modal -->
-                        <div class="modal fade" id="deleteReportModal{{ report.report_id }}" tabindex="-1" aria-labelledby="deleteReportModalLabel{{ report.report_id }}" aria-hidden="true">
-                          <div class="modal-dialog">
-                            <div class="modal-content">
-                              <div class="modal-header">
-                                <h5 class="modal-title" id="deleteReportModalLabel{{ report.report_id }}">Confirm Delete</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                              </div>
-                              <div class="modal-body">
-                                Are you sure you want to delete inspection report #{{ report.report_id }} for {{ report.vehicle }}?
-                              </div>
-                              <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <form action="{% url 'delete_report' report.report_id %}" method="post">
-                                  {% csrf_token %}
-                                  <button type="submit" class="btn btn-danger">Delete</button>
-                                </form>
+                        </td>
+                        <td class="text-center">
+                            <div class="action-buttons">
+                                {% if not report.is_submitted and report.inspector == user %}
+                                    <a href="{% url 'create_report' %}?report_id={{ report.report_id }}" class="edit-report-btn" title="Edit Report">
+                                        <i class="bi bi-pencil-square fs-5"></i>
+                                    </a>
+                                    <a href="#" class="delete-report-btn text-danger" data-bs-toggle="modal" data-bs-target="#deleteReportModal{{ report.report_id }}" title="Delete Report">
+                                        <i class="bi bi-trash fs-5"></i>
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'generate_report_pdf' report.report_id %}" class="open-report-btn" target="_blank" title="View PDF">
+                                    <i class="bi bi-box-arrow-up-right fs-5"></i>
+                                </a>
+                            </div>
+                            
+                            <!-- Delete Confirmation Modal -->
+                            <div class="modal fade" id="deleteReportModal{{ report.report_id }}" tabindex="-1" aria-labelledby="deleteReportModalLabel{{ report.report_id }}" aria-hidden="true">
+                              <div class="modal-dialog">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteReportModalLabel{{ report.report_id }}">Confirm Delete</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                  </div>
+                                  <div class="modal-body">
+                                    Are you sure you want to delete inspection report #{{ report.report_id }} for {{ report.vehicle }}?
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{% url 'delete_report' report.report_id %}" method="post">
+                                      {% csrf_token %}
+                                      <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center py-4">No inspection reports found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">No inspection reports found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     {% if page_obj.paginator.num_pages > 1 %}
